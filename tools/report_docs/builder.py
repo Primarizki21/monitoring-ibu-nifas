@@ -1,72 +1,69 @@
+from pathlib import Path
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.table import WD_TABLE_ALIGNMENT
 
 from tools.report_docs.styles import (
     apply_page_setup,
+    add_cover_page,
     add_callout,
     format_table_headers,
     set_cell_margins,
     set_cell_background,
     add_heading_2,
     add_heading_3,
+    add_justified_paragraph,
+    add_chart_figure,
 )
 from tools.report_docs import content
 
-def build_project_charter_doc() -> Document:
+def build_project_charter_doc(assets_dir: Path) -> Document:
     doc = Document()
     apply_page_setup(doc)
 
-    # Document Title
-    p_title = doc.add_paragraph()
-    p_title.paragraph_format.space_before = Pt(0)
-    p_title.paragraph_format.space_after = Pt(2)
-    r_title = p_title.add_run(content.METADATA["title"])
-    r_title.bold = True
-    r_title.font.size = Pt(20)
-    r_title.font.color.rgb = RGBColor(15, 76, 129)
-
-    # Subtitle
-    p_sub = doc.add_paragraph()
-    p_sub.paragraph_format.space_after = Pt(14)
-    r_sub = p_sub.add_run(content.METADATA["subtitle"])
-    r_sub.font.size = Pt(12)
-    r_sub.font.color.rgb = RGBColor(71, 85, 105)
-
-    # Project Metadata Callout
-    add_callout(
+    # 1. Dedicated Cover Page (Centered on Page 1, Page-break to Page 2)
+    add_cover_page(
         doc,
-        "INFORMASI PROYEK PENGABDIAN MASYARAKAT",
-        content.METADATA["project_info"],
-        bg_color="F8FAFC",
-        border_color="0F4C81",
-        title_color=(15, 76, 129),
+        title=content.METADATA["title"],
+        subtitle=content.METADATA["subtitle"],
+        meta_lines=content.METADATA["meta_lines"]
     )
 
-    # Bab 1. Ringkasan Eksekutif
-    add_heading_2(doc, "Bab 1. Ringkasan Eksekutif (Executive Summary)", page_break=True)
-    for p_text in content.CHAPTER_1_TEXTS:
-        doc.add_paragraph(p_text)
+    # 2. Bab 1. Ringkasan Eksekutif (Starts directly on Page 2)
+    add_heading_2(doc, "Bab 1. Ringkasan Eksekutif (Executive Summary)", page_break=False)
+    for p_runs in content.CHAPTER_1_TEXTS:
+        add_justified_paragraph(doc, p_runs)
 
-    # Bab 2. Prinsip Desain
+    # 3. Bab 2. Prinsip Desain & Keputusan Kritis Sistem
     add_heading_2(doc, "Bab 2. Prinsip Desain & Keputusan Kritis Sistem", page_break=True)
-    for sub_title, text in content.CHAPTER_2_ITEMS:
+    for sub_title, text_runs in content.CHAPTER_2_ITEMS:
         add_heading_3(doc, sub_title)
-        doc.add_paragraph(text)
+        add_justified_paragraph(doc, text_runs)
 
-    # Bab 3. Diagram & Alur Kerja Sistem
+    # 4. Bab 3. Diagram & Alur Kerja Sistem (Flowchart Operasional)
     add_heading_2(doc, "Bab 3. Diagram & Alur Kerja Sistem (Flowchart Operasional)", page_break=True)
-    doc.add_paragraph("Alur operasional sistem menghubungkan lima tahapan kerja terintegrasi dari faskes ke rumah pasien:")
-
-    add_callout(
+    add_justified_paragraph(
         doc,
-        "LIMA TAHAP ALUR OPERASIONAL SISTEM",
-        content.FLOW_STAGES_SUMMARY,
-        bg_color="EFF6FF",
-        border_color="2563EB",
-        title_color=(30, 64, 175),
+        "Alur operasional sistem pemantauan nifas dibagi menjadi tiga tahapan visual low-level, "
+        "menghubungkan faskes penolong persalinan, sistem automasi server, interaksi WhatsApp ibu, hingga intervensi bidan wilayah:"
     )
 
+    # Render each sub-flowchart section with image + caption + explanation
+    for sec in content.FLOWCHART_SECTIONS:
+        add_heading_3(doc, sec["title"])
+        img_path = assets_dir / sec["image_file"]
+        if not img_path.exists():
+            raise FileNotFoundError(f"Flowchart image not found: {img_path}")
+        add_chart_figure(
+            doc,
+            image_path=img_path,
+            caption_title=sec["caption"],
+            explanation_text=sec["explanation"],
+            width=Inches(4.6)
+        )
+
+    # Summary 5-Stage Table
+    add_heading_3(doc, "3.4. Matriks Ringkasan Alur 5 Tahap Operasional")
     tbl_flow = doc.add_table(rows=len(content.FLOW_TABLE_DATA), cols=5)
     tbl_flow.alignment = WD_TABLE_ALIGNMENT.CENTER
     flow_widths = [Inches(1.0), Inches(1.1), Inches(1.4), Inches(1.5), Inches(1.5)]
@@ -79,12 +76,19 @@ def build_project_charter_doc() -> Document:
                 set_cell_background(cell, "F8FAFC")
     format_table_headers(tbl_flow, flow_widths, "0F4C81")
 
-    doc.add_paragraph().paragraph_format.space_after = Pt(4)
-    doc.add_paragraph("Spesifikasi diagram alir ANSI/ISO lengkap dan kode Mermaid dapat diakses pada dokumen repositori: FLOWCHART.md.")
+    p_note = doc.add_paragraph()
+    p_note.paragraph_format.space_before = Pt(6)
+    p_note.paragraph_format.space_after = Pt(4)
+    r_n = p_note.add_run("Catatan: ")
+    r_n.bold = True
+    p_note.add_run("Spesifikasi diagram alir ANSI/ISO lengkap dan kode Mermaid dapat diakses pada dokumen repositori: FLOWCHART.md.")
 
-    # Bab 4. Multi-Tenant RBAC
+    # 5. Bab 4. Struktur Peran & Hak Akses (Multi-Tenant RBAC)
     add_heading_2(doc, "Bab 4. Struktur Peran & Hak Akses (Multi-Tenant RBAC)", page_break=True)
-    doc.add_paragraph("Sistem menerapkan isolasi data faskes yang ketat untuk menjamin kerahasiaan data medis pasien:")
+    add_justified_paragraph(
+        doc,
+        "Sistem menerapkan isolasi data faskes yang ketat untuk menjamin kerahasiaan dan privasi data medis pasien:"
+    )
 
     tbl_rbac = doc.add_table(rows=len(content.RBAC_TABLE_DATA), cols=4)
     tbl_rbac.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -96,18 +100,31 @@ def build_project_charter_doc() -> Document:
             set_cell_margins(cell, top=100, bottom=100, left=120, right=120)
     format_table_headers(tbl_rbac, rbac_widths, "0F4C81")
 
-    # Bab 5. Spesifikasi Teknis & Analogi
+    # 6. Bab 5. Spesifikasi Teknis & Infrastruktur (Penjelasan Konseptual)
     add_heading_2(doc, "Bab 5. Spesifikasi Teknis & Infrastruktur (Penjelasan Lengkap)", page_break=True)
-    doc.add_paragraph("Untuk memudahkan pemahaman seluruh tim pengmas dan reviewer non-teknis, berikut penjelasan teknis beserta analogi fungsinya:")
+    add_justified_paragraph(
+        doc,
+        "Untuk memudahkan pemahaman seluruh pemangku kepentingan lintas disiplin, berikut penjelasan teknis beserta analogi fungsinya:"
+    )
 
     for title, tech, analogy in content.TECH_ITEMS:
         add_heading_3(doc, title)
-        doc.add_paragraph(tech)
-        add_callout(doc, "Analogi untuk Dosen & Tim Non-Teknis:", analogy, bg_color="F0FDF4", border_color="16A34A")
+        add_justified_paragraph(doc, tech)
+        add_callout(
+            doc,
+            title="Penjelasan Konseptual & Analogi Sistem:",
+            text=analogy,
+            bg_color="F0FDF4",
+            border_color="16A34A",
+            title_color=(22, 101, 52)
+        )
 
-    # Bab 6. Protokol Medis KF1-KF4
+    # 7. Bab 6. Protokol Medis & Matriks Skrining (KF1 s/d KF4)
     add_heading_2(doc, "Bab 6. Protokol Medis & Matriks Skrining (KF1 s/d KF4)", page_break=True)
-    doc.add_paragraph("Parameter skrining klinis merujuk pada standar Buku KIA Kementerian Kesehatan RI:")
+    add_justified_paragraph(
+        doc,
+        "Parameter skrining klinis diturunkan langsung dari standar Buku KIA Kementerian Kesehatan RI:"
+    )
 
     tbl_med = doc.add_table(rows=len(content.MEDICAL_TABLE_DATA), cols=4)
     tbl_med.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -119,9 +136,12 @@ def build_project_charter_doc() -> Document:
             set_cell_margins(cell, top=100, bottom=100, left=120, right=120)
     format_table_headers(tbl_med, med_widths, "0F4C81")
 
-    # Bab 7. RAB & Efisiensi Finansial
+    # 8. Bab 7. Rencana Anggaran Biaya & Efisiensi Finansial (Pilot 3 Bulan)
     add_heading_2(doc, "Bab 7. Rencana Anggaran Biaya & Efisiensi Finansial (Pilot 3 Bulan)", page_break=True)
-    doc.add_paragraph("Rincian anggaran telah disinkronkan secara presisi dengan lembar kerja Google Spreadsheet:")
+    add_justified_paragraph(
+        doc,
+        "Rincian anggaran telah disinkronkan secara presisi dengan lembar kerja Google Spreadsheet:"
+    )
 
     tbl_rab = doc.add_table(rows=len(content.BUDGET_TABLE_DATA), cols=4)
     tbl_rab.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -139,19 +159,22 @@ def build_project_charter_doc() -> Document:
                         r.font.color.rgb = RGBColor(22, 101, 52)
     format_table_headers(tbl_rab, rab_widths, "0F4C81")
 
-    doc.add_paragraph().paragraph_format.space_after = Pt(4)
+    p_sp = doc.add_paragraph()
+    p_sp.paragraph_format.space_before = Pt(2)
+    p_sp.paragraph_format.space_after = Pt(2)
     add_callout(
         doc,
-        "CATATAN EFISIENSI FINANSIAL",
-        content.EFFICIENCY_NOTES,
+        title="CATATAN EFISIENSI FINANSIAL",
+        text=content.EFFICIENCY_NOTES,
         bg_color="FEF9C3",
         border_color="CA8A04",
-        title_color=(133, 77, 14),
+        title_color=(133, 77, 14)
     )
 
-    # Bab 8. Roadmap 3 Bulan Live Deployment
+    # 9. Bab 8. Roadmap 3 Bulan Live Deployment
     add_heading_2(doc, "Bab 8. Rencana Kerja Lapangan (Roadmap 3 Bulan Live Deployment)", page_break=True)
-    doc.add_paragraph(
+    add_justified_paragraph(
+        doc,
         "Jadwal di bawah ini menegaskan tiga bulan masa operasional langsung di lapangan (Live Deployment) di mana sistem telah aktif melayani pasien nifas:"
     )
 
