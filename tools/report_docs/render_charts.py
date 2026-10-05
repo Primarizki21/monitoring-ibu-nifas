@@ -79,7 +79,7 @@ flowchart TD
         F{"Apakah Ada Jadwal KF Hari Ini?"}
         G[Ambil Data Pasien Jatuh Tempo]
         H[Siapkan Template Pesan Skrining KF]
-        I[Tunggu Jadwal Hari Berikutnya]
+        I([Standby: Menunggu Jadwal Hari Berikutnya])
     end
 
     A --> B
@@ -87,10 +87,9 @@ flowchart TD
     C --> D
     D --> E
     E --> F
-    F -- "Tidak" --> I
-    I --> E
     F -- "Ya" --> G
     G --> H
+    F -- "Tidak" --> I
 """,
     "flowchart_2_triage": """%%{init: {"flowchart": {"curve": "stepAfter", "htmlLabels": true}} }%%
 flowchart TD
@@ -103,14 +102,13 @@ flowchart TD
 
     subgraph TRIASE ["EVALUASI TRIASE & LOGIKA MEDIS"]
         M[Ekstraksi Jawaban Skrining Ibu]
-        N{"Apakah Ditemukan Tanda Bahaya / Keluhan?"}
-        O[Tetapkan Status HIJAU: Normal / Aman]
-        P[Kirim Pesan Edukasi Perawatan Nifas & ASI]
-        Q{"Tingkat Keparahan Keluhan?"}
-        R[Tetapkan Status KUNING: Perlu Evaluasi]
-        S[Tetapkan Status MERAH: Bahaya Akut]
-        T[/Kirim Pesan Darurat & Kontak Bidan PJ ke WA Ibu/]
-        U[/Kirim Alert Prioritas ke Dashboard PWA Bidan/]
+        N{"Hasil Skrining Gejala Sesuai Buku KIA?"}
+        O[Status HIJAU: Normal / Aman]
+        P[/Kirim Pesan Edukasi Perawatan Nifas & ASI/]
+        R[Status KUNING: Keluhan Sedang]
+        U1[/Kirim Kontak Bidan PJ & Alert Pantauan ke PWA/]
+        S[Status MERAH: Bahaya Akut]
+        U2[/Kirim Pesan Darurat & Alert Prioritas Merah/]
     end
 
     H --> J
@@ -118,42 +116,44 @@ flowchart TD
     K --> L
     L --> M
     M --> N
-    N -- "Tidak Ada Keluhan" --> O
+
+    N -- "Normal" --> O
     O --> P
-    N -- "Ada Keluhan" --> Q
-    Q -- "Keluhan Ringan/Sedang" --> R
-    Q -- "Gejala Bahaya / Red Flag" --> S
-    R --> T
-    S --> T
-    T --> U
+
+    N -- "Waspada" --> R
+    R --> U1
+
+    N -- "Bahaya" --> S
+    S --> U2
 """,
     "flowchart_3_intervention": """%%{init: {"flowchart": {"curve": "stepAfter", "htmlLabels": true}} }%%
 flowchart TD
     subgraph INTERVENSI ["TINDAKAN KLINIS NAKES"]
         U[Alert Triase Masuk Dashboard PWA]
         V[Bidan Meninjau Gejala & Lokasi Pasien]
-        W[Bidan Klik Tombol wa.me Hubungi Ibu]
-        W2[Opsi Fail-Safe: Hubungi Kontak Darurat Suami jika Ibu Tidak Respon]
+        W[Jalur Utama: Bidan Klik wa.me Hubungi Ibu]
+        W2[Jalur Fail-Safe: Hubungi Suami jika Ibu Tidak Respon]
         X[Bidan Melakukan Anamnesis & Tindakan Medis]
         Y[Bidan Update Catatan Rekam Medis di PWA]
     end
 
     subgraph SIKLUS ["SIKLUS HIDUP PEMANTAUAN 42 HARI"]
         Z{"Apakah Hari Pascasalin >= 42 Hari / KF4 Selesai?"}
+        AC([Status Aktif: Menunggu Jadwal KF Berikutnya])
         AA[Tandai Pasien: LULUS / SELESAI NIFAS]
         AB([Selesai: Pemantauan Nifas Lengkap])
-        AC[Tetap Aktif untuk Jadwal KF Berikutnya]
     end
 
     U --> V
     V --> W
-    V -. "Ibu Tidak Respon" .-> W2
+    V -. "Darurat / Tidak Respon" .-> W2
     W --> X
     W2 --> X
     X --> Y
     Y --> Z
-    Z -- "Belum (Masih Masa Nifas)" --> AC
-    Z -- "Ya (Selesai 42 Hari)" --> AA
+
+    Z -- "Belum (Masih Nifas)" --> AC
+    Z -- "Ya (Hari 42 Selesai)" --> AA
     AA --> AB
 """
 }
@@ -165,7 +165,7 @@ def render_all_charts(output_dir: Path):
         tmp_path = Path(tmpdir)
         cfg_file = tmp_path / "mermaid_config.json"
         css_file = tmp_path / "mermaid_style.css"
-        
+
         cfg_file.write_text(json.dumps(DRAWIO_CONFIG), encoding="utf-8")
         css_file.write_text(DRAWIO_CSS, encoding="utf-8")
 
