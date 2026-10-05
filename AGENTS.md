@@ -106,17 +106,18 @@ Sistem pemantauan kesehatan ibu nifas terautomasi berbasis **WhatsApp** dan **PW
 
 ## 7. Rencana Deliverables Proyek
 
-2. **Google Docs (Dokumen Abstraksi Proyek / Technical Whitepaper)**:
-   - Dokumen formal: [Project Charter & Technical Brief](https://docs.google.com/document/d/1MGuyIH8bSQ3jBsk8kKsxSAsildZA11Rwhq3HyZ4dfA4/edit?usp=drivesdk)
-   - Dokumen resmi untuk pimpinan riset, dosen pembimbing, dan Dinas Kesehatan Surabaya:
+2. **Dokumen Abstraksi Proyek (Local-First DOCX & Google Docs)**:
+   - **Berkas Lokal**: `docs/PROJECT_CHARTER_MONITORING_NIFAS.docx` (dibuat via `uv run python scripts/generate_charter_docx.py`).
+   - **Google Docs Resmi**: [Project Charter & Technical Brief](https://docs.google.com/document/d/1MGuyIH8bSQ3jBsk8kKsxSAsildZA11Rwhq3HyZ4dfA4/edit?usp=drivesdk)
+   - **Aturan Workflow**: Gunakan pendekatan *Local-First* (.docx lokal di-edit/generate offline terlebih dahulu tanpa delay API, diverifikasi, lalu diimpor/upload ke Google Docs sekali jalan).
+   - **Cakupan Dokumen**:
      - Latar Belakang & Urgensi Pemantauan Nifas di Surabaya.
      - Konsep & Arsitektur Solusi (Tanpa LLM, Direct Mother WA + Emergency Contact Suami, Multi-Tenant).
-     - Alur Kerja End-to-End (Bagan Box-and-Arrow).
-     - Penjelasan Sederhana Komponen Sistem untuk Dosen/Reviewer Non-Teknis.
+     - Alur Kerja End-to-End (Bagan Box-and-Arrow & Tabel Matriks 5 Tahap).
+     - Penjelasan Sederhana Komponen Sistem untuk Dosen/Reviewer Non-Teknis (Kotak Analogi Hijau).
      - Standar Klinis KF1–KF4 & SOP Triase Faskes.
      - Ringkasan Anggaran & Efisiensi Biaya (Tautan ke Google Spreadsheet).
      - Roadmap 3 Bulan Live Deployment di 13 Faskes Mitra.
-
 ---
 
 ## 8. Workflow: Verifikasi Berulang & Atomic Commits
