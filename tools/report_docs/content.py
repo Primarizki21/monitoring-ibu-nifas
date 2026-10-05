@@ -97,19 +97,21 @@ FLOWCHART_SECTIONS = [
             "Untuk mencegah beban administrasi pada ibu yang sedang memulihkan kondisi fisik, pendaftaran dilakukan oleh bidan "
             "bersama suami atau keluarga pendamping. Sistem secara otomatis menghitung linimasa kunjungan nifas (KF1 hingga KF4) "
             "berdasarkan tanggal dan jam persalinan. Setiap hari pukul 08.00 WIB, mesin scheduler mandiri memindai database "
-            "untuk menyiapkan antrean pesan pengingat bagi pasien yang memasuki jadwal pemantauan."
+            "untuk menyiapkan antrean pesan pengingat bagi pasien yang memasuki jadwal pemantauan, atau beralih ke status siaga (standby) "
+            "jika tidak ada jadwal jatuh tempo."
         )
     },
     {
         "title": "3.2. Alur Interaksi WhatsApp & Triase Klinis Deterministik (Tahap 3 & 4)",
         "image_file": "flowchart_2_triage.png",
-        "caption": "Gambar 3.2: Alur Interaksi WhatsApp Dua Arah dan Evaluasi Triase Klinis Deterministik",
+        "caption": "Gambar 3.2: Alur Interaksi WhatsApp Dua Arah dan Evaluasi Triase Klinis Deterministik Tiga Cabang",
         "explanation": (
             "Diagram 3.2 mengilustrasikan interaksi dua arah antara pasien dan nomor resmi bot WhatsApp. "
             "Pesan skrining dikirimkan langsung ke nomor ibu nifas sebagai pihak yang merasakan langsung tanda klinis tubuhnya. "
             "Ibu cukup memilih opsi angka atau tombol terstruktur tanpa perlu mengetik teks panjang. "
-            "Evaluasi kondisi dilakukan secara deterministik tanpa LLM berdasarkan indikator Buku KIA Kemenkes RI, "
-            "mengeliminasi risiko halusinasi medis dan memastikan klasifikasi triase (Hijau, Kuning, Merah) memiliki dasar pertanggungjawaban klinis."
+            "Evaluasi kondisi dilakukan secara deterministik tanpa LLM melalui klasifikasi triase tiga cabang (trident layout) "
+            "berdasarkan Buku KIA: jalur Hijau (Normal) langsung menerima edukasi, jalur Kuning (Waspada) meneruskan alert dan kontak bidan, "
+            "serta jalur Merah (Bahaya Akut) memicu alert prioritas darurat medis."
         )
     },
     {
@@ -119,9 +121,9 @@ FLOWCHART_SECTIONS = [
         "explanation": (
             "Diagram 3.3 menunjukkan prosedur tanggap klinis oleh tenaga kesehatan dan tata kelola siklus hidup pemantauan. "
             "Dashboard triase menerapkan pemilahan data berbasis wilayah faskes, sehingga bidan hanya menerima notifikasi pasien binaannya. "
-            "Fitur click-to-chat (wa.me) memungkinkan bidan langsung menyapa pasien dari perangkat komunikasinya tanpa hambatan teknis. "
-            "Jika ibu tidak merespons atau berada dalam kondisi darurat kritis, nomor kontak suami diaktifkan sebagai jalur penyelamatan (fail-safe). "
-            "Penanganan suatu insiden tidak memutus pemantauan; sistem terus berjalan hingga hari ke-42 nifas berakhir secara paripurna."
+            "Alur tindakan klinis terbagi seimbang antara jalur utama komunikasi bidan ke ibu via wa.me dan jalur pengaman darurat (fail-safe) "
+            "ke suami jika pasien tidak merespons. Penanganan suatu insiden tidak memutus pemantauan; sistem tetap berstatus aktif mengawal "
+            "jadwal berikutnya hingga evaluasi ambang 42 hari selesai secara paripurna."
         )
     }
 ]
