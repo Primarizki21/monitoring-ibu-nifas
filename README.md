@@ -47,3 +47,8 @@ uv run uvicorn app.main:app --reload --port 8000
 # 3. Pengujian endpoint health check
 curl http://localhost:8000/health
 ```
+
+### Pembuatan Dokumen Project Charter (.docx)
+```bash
+uv run python tools/report_docs/main.py
+```

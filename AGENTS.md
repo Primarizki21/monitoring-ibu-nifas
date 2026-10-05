@@ -107,7 +107,7 @@ Sistem pemantauan kesehatan ibu nifas terautomasi berbasis **WhatsApp** dan **PW
 ## 7. Rencana Deliverables Proyek
 
 2. **Dokumen Abstraksi Proyek (Local-First DOCX & Google Docs)**:
-   - **Berkas Lokal**: `docs/PROJECT_CHARTER_MONITORING_NIFAS.docx` (dibuat via `uv run python scripts/generate_charter_docx.py`).
+   - **Berkas Lokal**: `docs/PROJECT_CHARTER_MONITORING_NIFAS.docx` (dibuat via `uv run python tools/report_docs/main.py`).
    - **Google Docs Resmi**: [Project Charter & Technical Brief](https://docs.google.com/document/d/1MGuyIH8bSQ3jBsk8kKsxSAsildZA11Rwhq3HyZ4dfA4/edit?usp=drivesdk)
    - **Aturan Workflow**: Gunakan pendekatan *Local-First* (.docx lokal di-edit/generate offline terlebih dahulu tanpa delay API, diverifikasi, lalu diimpor/upload ke Google Docs sekali jalan).
    - **Cakupan Dokumen**:
