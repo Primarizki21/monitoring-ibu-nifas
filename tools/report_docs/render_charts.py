@@ -1,10 +1,71 @@
+import json
 import os
 import subprocess
 import tempfile
 from pathlib import Path
 
+DRAWIO_CONFIG = {
+    "theme": "base",
+    "themeVariables": {
+        "fontFamily": "Times New Roman, Times, serif",
+        "fontSize": "12px",
+        "primaryColor": "#ffffff",
+        "primaryBorderColor": "#000000",
+        "primaryTextColor": "#000000",
+        "lineColor": "#000000",
+        "textColor": "#000000",
+        "edgeLabelBackground": "#ffffff",
+        "clusterBkg": "#ffffff",
+        "clusterBorder": "#000000"
+    },
+    "flowchart": {
+        "curve": "stepAfter",
+        "nodeSpacing": 45,
+        "rankSpacing": 45,
+        "htmlLabels": True
+    }
+}
+
+DRAWIO_CSS = """
+.node rect, .node polygon, .node path {
+    fill: #ffffff !important;
+    stroke: #000000 !important;
+    stroke-width: 1.5px !important;
+    rx: 0px !important;
+    ry: 0px !important;
+}
+.node .label, .node text {
+    font-family: 'Times New Roman', Times, serif !important;
+    font-size: 12px !important;
+    fill: #000000 !important;
+    color: #000000 !important;
+}
+.cluster rect {
+    fill: #ffffff !important;
+    stroke: #000000 !important;
+    stroke-width: 1.5px !important;
+    stroke-dasharray: 5 3 !important;
+    rx: 0px !important;
+    ry: 0px !important;
+}
+.cluster text, .cluster .label {
+    font-family: 'Times New Roman', Times, serif !important;
+    font-size: 13px !important;
+    font-weight: bold !important;
+    fill: #000000 !important;
+}
+.edgePath path {
+    stroke: #000000 !important;
+    stroke-width: 1.5px !important;
+}
+.marker, marker path {
+    fill: #000000 !important;
+    stroke: #000000 !important;
+}
+"""
+
 CHARTS = {
-    "flowchart_1_onboarding": """%%{init: {"flowchart": {"curve": "ortho", "htmlLabels": true}} }%%
+    "flowchart_1_onboarding": """%%{init: {"flowchart": {"curve": "stepAfter", "htmlLabels": true}} }%%
 flowchart TD
     subgraph FASKES ["FASKES & REGISTRASI (DISCHARGE PLANNING)"]
         A([Mulai: Pasien Melahirkan di RS / Puskesmas])
@@ -31,7 +92,7 @@ flowchart TD
     F -- "Ya" --> G
     G --> H
 """,
-    "flowchart_2_triage": """%%{init: {"flowchart": {"curve": "ortho", "htmlLabels": true}} }%%
+    "flowchart_2_triage": """%%{init: {"flowchart": {"curve": "stepAfter", "htmlLabels": true}} }%%
 flowchart TD
     subgraph WA ["LAYANAN WHATSAPP (BOT & IBU NIFAS)"]
         H[Template Pesan Skrining Siap]
@@ -66,7 +127,7 @@ flowchart TD
     S --> T
     T --> U
 """,
-    "flowchart_3_intervention": """%%{init: {"flowchart": {"curve": "ortho", "htmlLabels": true}} }%%
+    "flowchart_3_intervention": """%%{init: {"flowchart": {"curve": "stepAfter", "htmlLabels": true}} }%%
 flowchart TD
     subgraph INTERVENSI ["TINDAKAN KLINIS NAKES"]
         U[Alert Triase Masuk Dashboard PWA]
@@ -101,27 +162,36 @@ def render_all_charts(output_dir: Path):
     output_dir.mkdir(parents=True, exist_ok=True)
     results = {}
     with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+        cfg_file = tmp_path / "mermaid_config.json"
+        css_file = tmp_path / "mermaid_style.css"
+        
+        cfg_file.write_text(json.dumps(DRAWIO_CONFIG), encoding="utf-8")
+        css_file.write_text(DRAWIO_CSS, encoding="utf-8")
+
         for name, code in CHARTS.items():
-            mmd_path = Path(tmpdir) / f"{name}.mmd"
+            mmd_path = tmp_path / f"{name}.mmd"
             png_path = output_dir / f"{name}.png"
             mmd_path.write_text(code, encoding="utf-8")
-            
+
             cmd = [
                 "npx", "@mermaid-js/mermaid-cli",
                 "-i", str(mmd_path),
                 "-o", str(png_path),
+                "-c", str(cfg_file),
+                "-C", str(css_file),
                 "-b", "white",
                 "-s", "2"
             ]
-            print(f"Rendering {name} -> {png_path}...")
+            print(f"Rendering {name} in Draw.io style -> {png_path}...")
             res = subprocess.run(cmd, capture_output=True, text=True)
             if res.returncode != 0:
                 raise RuntimeError(f"Failed to render {name}: {res.stderr}")
-            
+
             size_kb = png_path.stat().st_size / 1024
             print(f"  Done: {png_path.name} ({size_kb:.1f} KB)")
             results[name] = png_path
-            
+
     return results
 
 if __name__ == "__main__":
