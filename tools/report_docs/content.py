@@ -45,14 +45,23 @@ CHAPTER_2_ITEMS = [
         [
             ("Sistem ini secara sengaja ", False, False),
             ("TIDAK MENGGUNAKAN Large Language Model", True, False),
-            (" (AI generatif). Keputusan ini didasari tiga pertimbangan utama:\n", False, False),
-            ("1. ", True, False),
-            ("Zero Medical Hallucination", True, True),
-            (": Triase kondisi darurat tidak boleh memiliki margin kesalahan atau jawaban spekulatif dari model bahasa.\n", False, False),
-            ("2. Kepatuhan Standar Klinis: Logika penilaian sepenuhnya mengacu pada algoritma Buku KIA Kemenkes RI yang deterministik dan ", False, False),
-            ("auditable", False, True),
-            (" secara hukum medis.\n", False, False),
-            ("3. Efisiensi Anggaran & Kecepatan: Meniadakan biaya token AI, memastikan waktu tanggap server di bawah 1 detik, dan beban komputasi sangat ringan.", False, False)
+            (" (AI generatif). Keputusan ini didasari tiga pertimbangan utama:", False, False)
+        ],
+        [
+            [
+                ("Zero Medical Hallucination", True, True),
+                (": Triase kondisi darurat tidak boleh memiliki margin kesalahan atau jawaban spekulatif dari model bahasa.", False, False)
+            ],
+            [
+                ("Kepatuhan Standar Klinis", True, False),
+                (": Logika penilaian sepenuhnya mengacu pada algoritma Buku KIA Kemenkes RI yang deterministik dan ", False, False),
+                ("auditable", False, True),
+                (" secara hukum medis.", False, False)
+            ],
+            [
+                ("Efisiensi Anggaran & Kecepatan", True, False),
+                (": Meniadakan biaya token AI, memastikan waktu tanggap server di bawah 1 detik, dan beban komputasi sangat ringan.", False, False)
+            ]
         ]
     ),
     (
@@ -60,22 +69,37 @@ CHAPTER_2_ITEMS = [
         [
             ("Untuk menghindari kerumitan dan biaya tinggi antarmuka ", False, False),
             ("live chat multi-agent", False, True),
-            (" di web, sistem menerapkan konsep kolaborasi dua sisi:\n", False, False),
-            ("1. Bot Pusat Resmi: Mengirimkan pesan pengingat jadwal dan menampung respons skrining tertutup berbasis tombol/angka.\n", False, False),
-            ("2. Intervensi Klinis Langsung (", False, False),
-            ("wa.me", False, True),
-            ("): Ketika terdeteksi keluhan (status Kuning/Merah), bot mengirim kontak bidan ke pasien, "
-             "dan di dashboard web bidan tersedia tombol 1-klik yang langsung membuka WhatsApp dinas bidan untuk melakukan anamnesis personal.", False, False)
+            (" di web, sistem menerapkan konsep kolaborasi dua sisi:", False, False)
+        ],
+        [
+            [
+                ("Bot Pusat Resmi", True, False),
+                (": Mengirimkan pesan pengingat jadwal dan menampung respons skrining tertutup berbasis tombol/angka.", False, False)
+            ],
+            [
+                ("Intervensi Klinis Langsung (", True, False),
+                ("wa.me", True, True),
+                (")", True, False),
+                (": Ketika terdeteksi keluhan (status Kuning/Merah), bot mengirim kontak bidan ke pasien, "
+                 "dan di dashboard web bidan tersedia tombol 1-klik yang langsung membuka WhatsApp dinas bidan untuk melakukan anamnesis personal.", False, False)
+            ]
         ]
     ),
     (
         "C. Strategi Kontak Pasien (Nomor Utama vs Kontak Darurat)",
+        None,
         [
-            ("1. Nomor Utama (WhatsApp Ibu): Seluruh pesan pengingat dan formulir skrining dikirimkan langsung ke nomor WhatsApp ibu nifas, "
-             "karena ibu adalah pihak yang merasakan langsung sensasi fisik tubuhnya.\n", False, False),
-            ("2. Kontak Darurat (Suami / Pendamping): Nomor telepon suami dicatat saat pendaftaran sebagai jalur cadangan (", False, False),
-            ("fail-safe", False, True),
-            (") jika ibu tidak merespons dalam 24 jam atau jika status merah kritis terdeteksi.", False, False)
+            [
+                ("Nomor Utama (WhatsApp Ibu)", True, False),
+                (": Seluruh pesan pengingat dan formulir skrining dikirimkan langsung ke nomor WhatsApp ibu nifas, "
+                 "karena ibu adalah pihak yang merasakan langsung sensasi fisik tubuhnya.", False, False)
+            ],
+            [
+                ("Kontak Darurat (Suami / Pendamping)", True, False),
+                (": Nomor telepon suami dicatat saat pendaftaran sebagai jalur cadangan (", False, False),
+                ("fail-safe", False, True),
+                (") jika ibu tidak merespons dalam 24 jam atau jika status merah kritis terdeteksi.", False, False)
+            ]
         ]
     ),
     (
@@ -83,7 +107,8 @@ CHAPTER_2_ITEMS = [
         [
             ("Penanganan suatu insiden keluhan pada KF1 atau KF2 tidak menghentikan jadwal pemantauan sistem. "
              "Sistem akan terus aktif mendampingi ibu secara otomatis hingga genap hari ke-42 (KF4 selesai) dan ditandai lulus pemantauan oleh bidan penanggung jawab.", False, False)
-        ]
+        ],
+        []
     )
 ]
 
@@ -128,15 +153,25 @@ FLOWCHART_SECTIONS = [
     }
 ]
 
+FLOW_TABLE_CAPTION = "Tabel 3.1: Matriks Ringkasan Alur 5 Tahap Operasional Sistem Pemantauan Nifas"
+FLOW_TABLE_EXPLANATION = (
+    "Tabel 3.1 merangkum pembagian peran aktor, masukan data, mekanisme pemrosesan sistem, dan keluaran yang dihasilkan "
+    "pada setiap tahapan operasional, mulai dari inisiasi pasien saat pemulangan hingga kelulusan masa nifas."
+)
 FLOW_TABLE_DATA = [
-    ["Tahap", "Aktor Utama", "Data Masukan (Input)", "Proses Sistem", "Hasil Keluaran (Output)"],
-    ["1. Pendaftaran", "Bidan & Suami", "No WA, Tgl Bersalin, Faskes", "Simpan profil & hitung jadwal KF", "Pasien aktif dalam kohort"],
-    ["2. Pengingat", "Mesin Scheduler", "Database jadwal harian", "Pencocokan tanggal bersalin", "Pesan WA terkirim ke ibu"],
-    ["3. Skrining", "Ibu Nifas", "Pilihan angka / gejala", "Klasifikasi triase Buku KIA", "Penetapan Hijau/Kuning/Merah"],
-    ["4. Intervensi", "Bidan Faskes", "Alert di dashboard triase", "Klik tombol wa.me & anamnesis", "Ibu tertangani klinis"],
-    ["5. Kelulusan", "Bidan & Sistem", "Skrining akhir KF4 (H42)", "Verifikasi akhir masa nifas", "Status resmi Lulus Nifas"],
+    ["No.", "Tahapan", "Aktor Utama", "Data Masukan (Input)", "Proses Sistem", "Hasil Keluaran (Output)"],
+    ["1", "Pendaftaran", "Bidan & Suami", "No WA, Tgl Bersalin, Faskes", "Simpan profil & hitung jadwal KF", "Pasien aktif dalam kohort"],
+    ["2", "Pengingat", "Mesin Scheduler", "Database jadwal harian", "Pencocokan tanggal bersalin", "Pesan WA terkirim ke ibu"],
+    ["3", "Skrining", "Ibu Nifas", "Pilihan angka / gejala", "Klasifikasi triase Buku KIA", "Penetapan Hijau/Kuning/Merah"],
+    ["4", "Intervensi", "Bidan Faskes", "Alert di dashboard triase", "Klik tombol wa.me & anamnesis", "Ibu tertangani klinis"],
+    ["5", "Kelulusan", "Bidan & Sistem", "Skrining akhir KF4 (H42)", "Verifikasi akhir masa nifas", "Status resmi Lulus Nifas"],
 ]
 
+RBAC_TABLE_CAPTION = "Tabel 4.1: Matriks Struktur Peran, Hak Akses, dan Batasan Data Pengguna (RBAC)"
+RBAC_TABLE_EXPLANATION = (
+    "Tabel 4.1 memetakan batasan hak akses antara Dinas Kesehatan Kota Surabaya sebagai pengawas makro dan fasilitas kesehatan "
+    "pelaksana sebagai garda depan penanganan klinis, memastikan prinsip kerahasiaan rekam medis tetap terjaga melalui isolasi tenant."
+)
 RBAC_TABLE_DATA = [
     ["Peran Pengguna", "Pemegang Akun", "Cakupan Data", "Kewenangan Utama"],
     ["Super Admin", "Dinas Kesehatan Kota Surabaya", "Seluruh Surabaya (13 Faskes)", "Membuat akun faskes, dashboard agregat kota, export laporan epidemiologi dan evaluasi pengmas."],
@@ -181,6 +216,11 @@ TECH_ITEMS = [
     )
 ]
 
+MEDICAL_TABLE_CAPTION = "Tabel 6.1: Protokol Medis Pemantauan Nifas dan Indikator Bahaya (KF1 s/d KF4)"
+MEDICAL_TABLE_EXPLANATION = (
+    "Tabel 6.1 menetapkan fokus pemantauan klinis serta tanda bahaya (red flag) pada setiap periode kunjungan nifas sesuai standar "
+    "Buku KIA Kemenkes RI, yang menjadi dasar logika triase otomatis sistem."
+)
 MEDICAL_TABLE_DATA = [
     ["Tahap", "Jadwal", "Fokus Pemantauan Klinis", "Indikator Bahaya (Red Flag)"],
     ["KF1", "Hari ke-1 s/d ke-2", "Perdarahan dini, involusi rahim, tanda vital, nyeri hebat.", "Darah membasahi >2 pembalut/jam, pandangan kabur, pusing hebat."],
@@ -189,6 +229,11 @@ MEDICAL_TABLE_DATA = [
     ["KF4", "Hari ke-29 s/d ke-42", "Pemulihan organ reproduksi, rencana KB, kondisi psikologis.", "Gejala depresi pascasalin (sedih terus-menerus, cemas berlebih, putus asa)."],
 ]
 
+BUDGET_TABLE_CAPTION = "Tabel 7.1: Rincian Rencana Anggaran Biaya Operasional Pilot 3 Bulan"
+BUDGET_TABLE_EXPLANATION = (
+    "Tabel 7.1 memaparkan alokasi pendanaan operasional selama 3 bulan live deployment di 13 faskes mitra, mencakup infrastruktur "
+    "server lokal, lisensi API WhatsApp resmi Meta, dan pos kontingensi operasional."
+)
 BUDGET_TABLE_DATA = [
     ["Komponen Pengeluaran", "Spesifikasi / Alokasi", "Waktu Bayar", "Total (Rp)"],
     ["Biaya Setup & Pengerjaan Awal", "Domain .id, saldo prabayar Meta WA, kontingensi 10%", "Sekali di Awal", "Rp550.000"],
@@ -198,13 +243,18 @@ BUDGET_TABLE_DATA = [
     ["TOTAL ANGGARAN PILOT (3 BULAN)", "Total kebutuhan dana operasional penuh 3 bulan", "3 Bulan Penuh", "Rp6.309.298"],
 ]
 
-EFFICIENCY_NOTES = (
-    "1. Penghematan Vendor: Mengeliminasi biaya langganan platform pihak ketiga (Rp500.000/bln) menghemat Rp1.500.000 selama 3 bulan.\n"
-    "2. Bebas Lisensi Komersial: Seluruh software inti berbasis open-source (FastAPI, PostgreSQL, Linux) tanpa biaya lisensi berkala.\n"
-    "3. Kontribusi In-Kind: Tenaga tim pengembang teknis merupakan kontribusi pengabdian sivitas akademika universitas.\n"
-    "4. Tautan Lembar Kerja: Google Spreadsheet Tab 'RAB Revisi (3 Bulan)'."
-)
+EFFICIENCY_NOTES = [
+    [("1. Penghematan Vendor: ", True, False), ("Mengeliminasi biaya langganan platform pihak ketiga (Rp500.000/bln) menghemat Rp1.500.000 selama 3 bulan.", False, False)],
+    [("2. Bebas Lisensi Komersial: ", True, False), ("Seluruh software inti berbasis open-source (FastAPI, PostgreSQL, Linux) tanpa biaya lisensi berkala.", False, False)],
+    [("3. Kontribusi In-Kind: ", True, False), ("Tenaga tim pengembang teknis merupakan kontribusi pengabdian sivitas akademika universitas.", False, False)],
+    [("4. Tautan Lembar Kerja: ", True, False), ("Google Spreadsheet Tab 'RAB Revisi (3 Bulan)'.", False, False)],
+]
 
+ROADMAP_TABLE_CAPTION = "Tabel 8.1: Rencana Kerja dan Linimasa Operasional Lapangan (Roadmap 3 Bulan)"
+ROADMAP_TABLE_EXPLANATION = (
+    "Tabel 8.1 menguraikan tahapan implementasi lapangan mulai dari persiapan infrastruktur awal hingga penyerahan laporan "
+    "evaluasi akhir kepada Dinas Kesehatan, dengan target kumulatif 1.500 ibu nifas terpantau."
+)
 ROADMAP_TABLE_DATA = [
     ["Periode Live Deployment", "Fokus Kegiatan Lapangan", "Target & Indikator Capaian"],
     ["Pra-Deployment (Minggu 0)", "Konfigurasi server VPS, verifikasi nomor bot WhatsApp Cloud API, setup akun faskes di 13 RS & Puskesmas.", "Sistem 100% online, nomor bot terverifikasi."],

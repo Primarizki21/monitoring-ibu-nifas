@@ -36,7 +36,20 @@ def set_cell_margins(cell, top=120, bottom=120, left=160, right=160):
         tcMar.append(node)
     tcPr.append(tcMar)
 
-def add_callout(doc, title: str, text: str, bg_color="F0FDF4", border_color="16A34A", title_color=(22, 101, 52)):
+def add_table_caption(doc, caption_text: str):
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_before = Pt(8)
+    p.paragraph_format.space_after = Pt(6)
+    r = p.add_run(caption_text)
+    r.bold = True
+    r.font.name = "Arial"
+    r.font.size = Pt(10)
+    r.font.color.rgb = RGBColor(71, 85, 105)
+    return p
+
+def add_callout(doc, title: str, text=None, text_items=None, bg_color="F0FDF4", border_color="16A34A", title_color=(22, 101, 52)):
+    content_input = text if text is not None else text_items
     tbl = doc.add_table(rows=1, cols=1)
     tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
     tbl.autofit = False
@@ -56,25 +69,54 @@ def add_callout(doc, title: str, text: str, bg_color="F0FDF4", border_color="16A
     )
     tcPr.append(tcBorders)
 
-    p = cell.paragraphs[0]
-    p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    p.paragraph_format.space_before = Pt(2)
-    p.paragraph_format.space_after = Pt(2)
-    r_title = p.add_run(title + "\n")
+    p_title = cell.paragraphs[0]
+    p_title.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    p_title.paragraph_format.space_before = Pt(2)
+    p_title.paragraph_format.space_after = Pt(4)
+    r_title = p_title.add_run(title)
     r_title.bold = True
     r_title.font.name = "Arial"
     r_title.font.size = Pt(11)
     r_title.font.color.rgb = RGBColor(*title_color)
 
-    r_text = p.add_run(text)
-    r_text.font.name = "Arial"
-    r_text.font.size = Pt(10.5)
-    r_text.font.color.rgb = RGBColor(30, 41, 59)
+    if isinstance(content_input, str):
+        lines = [line.strip() for line in content_input.split("\n") if line.strip()]
+    elif content_input is not None:
+        lines = content_input
+    else:
+        lines = []
+
+    for item in lines:
+        p_item = cell.add_paragraph()
+        p_item.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        p_item.paragraph_format.space_before = Pt(2)
+        p_item.paragraph_format.space_after = Pt(4)
+        if isinstance(item, str):
+            r_text = p_item.add_run(item)
+            r_text.font.name = "Arial"
+            r_text.font.size = Pt(10.5)
+            r_text.font.color.rgb = RGBColor(30, 41, 59)
+        elif isinstance(item, (list, tuple)):
+            for run_def in item:
+                if isinstance(run_def, str):
+                    r = p_item.add_run(run_def)
+                    r.font.name = "Arial"
+                    r.font.size = Pt(10.5)
+                    r.font.color.rgb = RGBColor(30, 41, 59)
+                else:
+                    text = run_def[0]
+                    is_bold = run_def[1] if len(run_def) > 1 else False
+                    is_italic = run_def[2] if len(run_def) > 2 else False
+                    r = p_item.add_run(text)
+                    r.bold = is_bold
+                    r.italic = is_italic
+                    r.font.name = "Arial"
+                    r.font.size = Pt(10.5)
+                    r.font.color.rgb = RGBColor(30, 41, 59)
     
     p_spacer = doc.add_paragraph()
     p_spacer.paragraph_format.space_before = Pt(0)
     p_spacer.paragraph_format.space_after = Pt(4)
-
 def format_table_headers(table, col_widths, hex_bg="0F4C81"):
     hdr_cells = table.rows[0].cells
     for i, cell in enumerate(hdr_cells):
@@ -122,6 +164,36 @@ def add_justified_paragraph(doc, text_runs):
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     p.paragraph_format.space_after = Pt(8)
+    if isinstance(text_runs, str):
+        p.add_run(text_runs)
+        return p
+    for item in text_runs:
+        if isinstance(item, str):
+            p.add_run(item)
+        else:
+            text = item[0]
+            is_bold = item[1] if len(item) > 1 else False
+            is_italic = item[2] if len(item) > 2 else False
+            r = p.add_run(text)
+            r.bold = is_bold
+            r.italic = is_italic
+    return p
+def create_numbering_id(doc):
+    numbering_elm = doc.part.numbering_part._element
+    existing_nums = numbering_elm.findall(qn('w:num'))
+    max_id = max([int(n.get(qn('w:numId'))) for n in existing_nums], default=0)
+    new_id = max_id + 1
+    new_num = parse_xml(f'<w:num {nsdecls("w")} w:numId="{new_id}"><w:abstractNumId w:val="7"/></w:num>')
+    numbering_elm.append(new_num)
+    return new_id
+
+def add_numbered_paragraph(doc, text_runs, num_id: int):
+    p = doc.add_paragraph(style="List Paragraph")
+    p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    p.paragraph_format.space_after = Pt(4)
+    pPr = p._p.get_or_add_pPr()
+    numPr = parse_xml(f'<w:numPr {nsdecls("w")}><w:ilvl w:val="0"/><w:numId w:val="{num_id}"/></w:numPr>')
+    pPr.append(numPr)
     if isinstance(text_runs, str):
         p.add_run(text_runs)
         return p
@@ -186,7 +258,7 @@ def add_cover_page(doc, title: str, subtitle: str, meta_lines: list):
     p_box.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_box.paragraph_format.space_before = Pt(4)
     p_box.paragraph_format.space_after = Pt(4)
-    r_boxtitle = p_box.add_run("INFORMASI PROYEK PENGABDIAN MASYARAKAT\n")
+    r_boxtitle = p_box.add_run("INFORMASI PROYEK PENGABDIAN MASYARAKAT")
     r_boxtitle.bold = True
     r_boxtitle.font.size = Pt(11)
     r_boxtitle.font.color.rgb = RGBColor(15, 76, 129)
