@@ -138,3 +138,46 @@ Setiap pengembangan fitur, perbaikan bug, atau penambahan dokumen dalam proyek i
    - `fix: <deskripsi>`: Untuk perbaikan bug atau koreksi alur.
    - `chore: <deskripsi>`: Untuk pengaturan dependensi, konfigurasi env, atau toolchain.
 4. **Kondisi Bersih**: Repositori harus selalu dalam kondisi buildable/runnable di setiap commit yang dibuat.
+
+### C. Workflow Eksekusi Rencana & To-Do List (Karpathy & J-Space Aligned)
+1. **Dekomposisi Low-Level Tanpa Abstraksi**:
+   - Pecah setiap arahan kerja ke dalam to-do list granular dengan kriteria keberhasilan yang dapat diverifikasi secara objektif.
+   - Hindari langkah abstrak (misal: "perbaiki dokumen"); gunakan deskripsi spesifik (misal: "pecah kolom Tahap jadi No. & Tahapan, tambah caption Tabel 3.1").
+2. **Eksekusi Loop & Update Status Berkelanjutan**:
+   - Eksekusi tugas langkah demi langkah sesuai urutan dependensi logika.
+   - Tandai to-do selesai secara langsung setelah verifikasi nyata berhasil sebelum beralih ke tugas berikutnya.
+3. **Smoke Run & Inspeksi Bukti Nyata**:
+   - Jalankan smoke test nyata (bukan hanya asumsi atau uji statis).
+   - Periksa langsung keluaran akhir (struktur paragraf, XML, data tabel, atau respon API) sebelum menyatakan fase selesai.
+4. **Siklus Atomic Commits Terisolasi**:
+   - Setelah satu unit logis selesai dan terverifikasi, commit perubahan secara terpisah sesuai format konvensi repo (`feat:`, `docs:`, `fix:`, `chore:`).
+
+---
+
+## 9. Pedoman Standarisasi Dokumen DOCX & Tipografi
+
+### A. Integritas Tipografi & Alignment (Anti-Stretching Rule)
+1. **Dilarang Karakter `\n` pada Paragraf Justified**:
+   - Jangan gunakan `\n` di dalam `p.add_run()` pada teks yang beralignment `JUSTIFY`.
+   - Karakter `\n` diterjemahkan sebagai soft-break (`<w:br/>` / Shift+Enter), yang memaksa Word meregangkan spasi antar-kata secara tidak wajar pada baris sebelum break.
+   - Setiap baris baru, butir catatan, atau sub-poin wajib dibuat sebagai paragraf mandiri (`<w:p>` / `doc.add_paragraph()` / `cell.add_paragraph()`).
+2. **Struktur Callout Box & Metadata**:
+   - Judul callout dan setiap butir teks/catatan wajib dipisah menjadi elemen paragraf (`<w:p>`) tersendiri di dalam sel tabel callout.
+   - Judul diformat rata kiri (`LEFT`), sedangkan butir penjelasan diformat rata kanan-kiri (`JUSTIFY`) atau rata tengah (`CENTER` untuk box metadata cover).
+
+### B. Standardisasi Tabel & Caption
+1. **Pemisahan Kolom Nomor dan Nama/Tahapan**:
+   - Kolom nomor urut (`No.`) dan nama tahap (`Tahapan`) wajib dipisah menjadi kolom tersendiri (jangan digabung menjadi satu kolom seperti `1. Pendaftaran`).
+2. **Caption Tabel Formal**:
+   - Setiap tabel wajib dilengkapi caption di atas tabel dengan format konsisten: `Tabel X.Y: <Judul Tabel>` (font 10pt bold, warna abu gelap, centered).
+3. **Paragraf Pengantar Kontekstual**:
+   - Setiap tabel wajib didahului minimal 1 paragraf narasi pengantar yang menjelaskan relevansi data bagi pembaca/reviewer non-teknis.
+4. **Dual-Width Constraint & Distribusi Lebar Kolom**:
+   - Lebar kolom wajib ditentukan secara eksplisit pada tingkat sel (`cell.width`) dan tabel dengan satuan pasti (`Inches` / DXA), dengan total penjumlahan sama dengan lebar konten halaman (6.27 inci pada A4 margin 1 inci).
+
+### C. Standardisasi Penomoran Otomatis & Bolding
+1. **Penomoran Otomatis OpenXML (`w:numPr`)**:
+   - Gunakan fitur penomoran Word (`List Paragraph` dengan `w:numPr`) untuk daftar bernomor, bukan penomoran manual hardcoded dalam teks string.
+   - Buat ID penomoran terpisah (`w:numId`) untuk setiap kelompok sub-bab agar nomor selalu mulai dari 1 secara deterministik.
+2. **Bolding Istilah Kunci**:
+   - Setiap poin istilah klinis/teknis utama wajib ditebalkan di awal kalimat run (contoh: `**Zero Medical Hallucination**: penjelasan...`).
