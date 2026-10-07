@@ -106,16 +106,15 @@ Sistem pemantauan kesehatan ibu nifas terautomasi berbasis **WhatsApp** dan **PW
 
 ## 7. Rencana Deliverables Proyek & Nomenklatur Dokumen
 
-### A. Daftar Berkas & Nomenklatur Terkini
+### A. Daftar Berkas & Nomenklatur Resmi (Versi 2.0 / Opsi A Terpilih)
 1. **Dokumen Project Charter & Spesifikasi Teknis (DOCX & Google Docs)**:
+   - **Nama Resmi v2**: `[v2] Project Charter & Spesifikasi — Sistem Monitoring Nifas Surabaya`
    - **Berkas Lokal**: `docs/PROJECT_CHARTER_MONITORING_NIFAS.docx` (dibuat otomatis via `uv run python tools/report_docs/main.py`).
-   - **Usulan Nama v2**: `docs/[v2]_PROJECT_CHARTER_MONITORING_NIFAS.docx` / `Project Charter & Technical Specification — Sistem Monitoring Nifas Surabaya (v2.0)`.
-   - **Google Docs Resmi**: [Project Charter & Technical Brief](https://docs.google.com/document/d/1MGuyIH8bSQ3jBsk8kKsxSAsildZA11Rwhq3HyZ4dfA4/edit?usp=drivesdk)
-   - **Aturan Workflow**: *Local-First* (.docx lokal di-generate offline terlebih dahulu tanpa latensi API, diverifikasi integritasnya, baru diunggah/disinkronkan ke Google Docs).
+   - **Google Docs Resmi**: [Project Charter & Technical Specification v2](https://docs.google.com/document/d/1MGuyIH8bSQ3jBsk8kKsxSAsildZA11Rwhq3HyZ4dfA4/edit?usp=drivesdk)
+   - **Aturan Workflow**: *Local-First* (.docx lokal di-generate offline terlebih dahulu tanpa latensi API, diverifikasi integritasnya, baru disinkronkan ke Google Docs).
 2. **Lembar Kerja Anggaran & Matriks Pesan (Google Spreadsheet)**:
-   - **Judul Saat Ini**: `Copy of RAB Sistem Monitoring Ibu Nifas` (ID: `1J38nXV5J0ri4aM3_s0h6bYo-dELT1FO5RBnxITIlUtc`).
-   - **Usulan Nama v2**: `[v2] RAB & Matriks Klinis — Sistem Monitoring Nifas Surabaya` (menghapus kata *"Copy of"* yang tidak formal).
-   - **Tautan Lembar Kerja**: [Buka Google Spreadsheet RAB & Matriks](https://docs.google.com/spreadsheets/d/1J38nXV5J0ri4aM3_s0h6bYo-dELT1FO5RBnxITIlUtc/edit?usp=sharing)
+   - **Nama Resmi v2**: `[v2] RAB & Matriks Klinis — Sistem Monitoring Nifas Surabaya` (ID: `1J38nXV5J0ri4aM3_s0h6bYo-dELT1FO5RBnxITIlUtc`).
+   - **Tautan Lembar Kerja**: [Buka Google Spreadsheet [v2] RAB & Matriks](https://docs.google.com/spreadsheets/d/1J38nXV5J0ri4aM3_s0h6bYo-dELT1FO5RBnxITIlUtc/edit?usp=sharing)
 
 ---
 
@@ -176,6 +175,20 @@ Berdasarkan kajian komparasi pada lembar kerja spreadsheet:
    - Total pengerjaan: Rp2.420.000 (wajib deposit awal Rp2.000.000 ke vendor Zenziva).
    - Biaya bulanan: Rp6.409.509/bln (karena pesan dipecah per 153 karakter = 2 SMS/pesan, tarif blended operator Rp708/SMS).
    - **Alasan Eliminasi**: SMS Masking bersifat **Satu Arah (One-Way)** sehingga pasien **tidak bisa membalas skrining**. Ini menggugurkan fungsi inti pemantauan nifas.
+
+### F. Evaluasi Anggaran Tambahan Lapangan (Paket B) & Disclaimer Asumsi
+> **DISCLAIMER STATUS ANGGARAN (PROVISIONAL ESTIMATE):**
+> Angka pada Paket B di bawah ini berstatus **Asumsi Awal (Preliminary Ballpark)** untuk keperluan perumusan proposal hibah pengmas. Rincian dan alokasi riil akan disesuaikan setelah koordinasi teknis bersama Dinas Kesehatan Kota Surabaya dan perwakilan 13 Faskes mitra.
+
+1. **Workshop ToT & Sosialisasi Bidan (~Rp2.100.000 - Asumsi)**:
+   - Pelatihan simulasi triase & PWA untuk perwakilan bidan 13 faskes (~26–30 nakes). Termasuk konsumsi dan cetak buku saku SOP nifas.
+2. **Media Edukasi Stiker Buku KIA (~Rp1.500.000 - Asumsi)**:
+   - 1.500 stiker panduan nifas tahan air ditempel di Buku KIA pasien saat *discharge planning* agar pasien menyimpan nomor bot resmi.
+3. **Subsidi Paket Data Internet & Pulsa Darurat Bidan (~Rp1.950.000 - Asumsi)**:
+   - **Klarifikasi Penting**: WhatsApp membutuhkan **Koneksi Internet (Paket Data)**. Subsidi ini difokuskan untuk kuota internet (misal 15–20 GB/bulan) nomor dinas/pribadi Bidan PJ di 13 faskes agar standby menerima alert secara stabil di area faskes yang minim Wi-Fi. Porsi kecil dialokasikan sebagai pulsa seluler cadangan untuk panggilan telepon darurat jika WhatsApp pasien offline/tidak aktif.
+4. **Ethical Clearance KEPK (~Rp1.000.000 - Asumsi)**:
+   - Pengurusan kelaikan etik penelitian/pengmas di komite etik kesehatan universitas.
+5. **Total Estimasi Paket B (Komprehensif)**: $\approx$ **Rp13.350.000** (Setup + Operasional IT + Operasional Lapangan 3 Bulan).
 
 ---
 
