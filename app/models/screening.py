@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from sqlmodel import Field, SQLModel
 from app.models.enums import MilestoneKF, ScheduleStatus, TriageResult
 
@@ -28,4 +28,4 @@ class ScreeningLog(SQLModel, table=True):
     selected_option: int
     triage_result: TriageResult = Field(index=True)
     gejala_terdeteksi: str | None = None
-    responded_at: datetime = Field(default_factory=datetime.utcnow)
+    responded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

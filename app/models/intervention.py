@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlmodel import Field, SQLModel
 from app.models.enums import ActionType, CaseStatus, TriageResult
 
@@ -18,7 +18,7 @@ class Intervention(InterventionBase, table=True):
     __tablename__ = "interventions"
 
     id: int | None = Field(default=None, primary_key=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class InterventionCreate(InterventionBase):

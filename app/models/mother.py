@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlmodel import Field, SQLModel
 from app.models.enums import ContactRelation, DeliveryType, StatusPemantauan
 
@@ -22,7 +22,7 @@ class Mother(MotherBase, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_by: uuid.UUID | None = Field(default=None, foreign_key="users.id")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class EmergencyContactBase(SQLModel):
