@@ -260,38 +260,53 @@ Sistem menerapkan template pesan deterministik terstruktur sesuai algoritma Buku
 | **Minggu 9 – 12** | **Bulan 3 Live** | Onboarding Kohort 3 (~500 ibu baru), kelulusan nifas 42 hari Kohort 1 & 2, penarikan data analitik epidemiologi Surabaya, serah terima laporan ke Dinkes. Total 1.500 ibu kumulatif. |
 ---
 
-## 12. Workflow: Verifikasi Berulang & Atomic Commits
+## 12. Workflow Mandatori: Siklus Eksekusi 5 Langkah (Karpathy & J-Space Aligned)
 
-Setiap pengembangan fitur, perbaikan bug, atau penambahan dokumen dalam proyek ini **wajib mematuhi alur kerja berikut**:
+Setiap sesi pekerjaan, implementasi fitur, perbaikan bug, atau penambahan dokumen **wajib mematuhi siklus 5 langkah berurutan berikut**:
 
-### A. Kriteria Verifikasi Terlebih Dahulu (Goal-Driven Verification)
-1. **Tidak Ada Asumsi**: Jangan menganggap kode atau dokumen bekerja hanya karena sintaks tidak error.
-2. **Smoke Test Wajib**: Setiap modul backend harus diverifikasi melalui eksekusi nyata menggunakan `uv run` (misalnya: test import, run schema validation, panggil endpoint health).
-3. **Pemeriksaan Bukti Hasil**: Verifikasi keluaran riil dari tool/API sebelum berpindah fase pekerjaan (misal membaca kembali sheet/doc yang baru di-generate).
+### Langkah 1: Trigger & Pembacaan Skill Wajib (Skill Ingestion)
+Sebelum menulis rencana atau menyentuh kode, identifikasi domain pekerjaan dan baca skill terkait:
+1. **`skill://j-space` (Wajib untuk Semua Tugas Multi-Langkah & Kompleks)**:
+   - Gunakan inner workspace untuk penalaran multi-step, klasifikasi pass (*fast/full/loop*), dan audit status pada setiap *seam*.
+   - Formulasikan ulang kebutuhan dalam 1 kalimat presisi sebelum melangkah.
+2. **`skill://antislop` (Wajib saat Menangani UI, Frontend, Copywriting, & Diagram)**:
+   - Terapkan standar bebas AI-slop: uji tujuan (*purpose-test*), bebas elemen interaktif mati (C-2), tidak ada klaim/data palsu (C-5), kontras WCAG AA, dan lulus *Delivery Gate*.
+3. **`skill://karpathy-guidelines`**:
+   - Selalu terapkan: *Think Before Coding* (tanpa asumsi, tanyakan ambiguitas), *Simplicity First* (kode minimal tanpa over-engineering), dan *Surgical Changes* (hanya sentuh baris yang relevan).
 
-### B. Protokol Atomic Commits
-1. **Satu Unit Perubahan Logis**: Setiap commit git hanya boleh mencakup satu fokus pekerjaan yang terisolasi dan mandiri (misal: penambahan konfigurasi, pembuatan model data, penambahan dokumentasi alur).
-2. **Jangan Menggabungkan Perubahan Berbeda (No Mega-Commits)**: Dilarang menggabungkan perubahan dependensi, perbaikan fitur, dan dokumentasi dalam satu commit tunggal.
-3. **Format Pesan Standar**:
-   - `docs: <deskripsi>`: Untuk perubahan dokumen, flowchart, dan knowledge base.
-   - `feat: <deskripsi>`: Untuk penambahan fitur atau modul baru.
-   - `fix: <deskripsi>`: Untuk perbaikan bug atau koreksi alur.
-   - `chore: <deskripsi>`: Untuk pengaturan dependensi, konfigurasi env, atau toolchain.
-4. **Kondisi Bersih**: Repositori harus selalu dalam kondisi buildable/runnable di setiap commit yang dibuat.
+### Langkah 2: Dekomposisi & Inisialisasi To-Do List
+1. **Dekomposisi Low-Level Objektif**:
+   - Pecah arahan pengguna menjadi butir-butir to-do granular dengan kriteria keberhasilan yang terukur (contoh: `buat fungsi X -> verifikasi via assert Y`).
+   - Hindari to-do abstrak seperti "perbaiki dokumen" atau "buat modul".
+2. **Inisialisasi Awal**:
+   - Daftarkan seluruh fase dan butir pekerjaan ke dalam to-do tracker di giliran pertama sebelum melakukan mutasi kode/file.
 
-### C. Workflow Eksekusi Rencana & To-Do List (Karpathy & J-Space Aligned)
-1. **Dekomposisi Low-Level Tanpa Abstraksi**:
-   - Pecah setiap arahan kerja ke dalam to-do list granular dengan kriteria keberhasilan yang dapat diverifikasi secara objektif.
-   - Hindari langkah abstrak (misal: "perbaiki dokumen"); gunakan deskripsi spesifik (misal: "pecah kolom Tahap jadi No. & Tahapan, tambah caption Tabel 3.1").
-2. **Eksekusi Loop & Update Status Berkelanjutan**:
-   - Eksekusi tugas langkah demi langkah sesuai urutan dependensi logika.
-   - Tandai to-do selesai secara langsung setelah verifikasi nyata berhasil sebelum beralih ke tugas berikutnya.
-3. **Smoke Run & Inspeksi Bukti Nyata**:
-   - Jalankan smoke test nyata (bukan hanya asumsi atau uji statis).
-   - Periksa langsung keluaran akhir (struktur paragraf, XML, data tabel, atau respon API) sebelum menyatakan fase selesai.
-4. **Siklus Atomic Commits Terisolasi**:
-   - Setelah satu unit logis selesai dan terverifikasi, commit perubahan secara terpisah sesuai format konvensi repo (`feat:`, `docs:`, `fix:`, `chore:`).
+### Langkah 3: Eksekusi Task Terisolasi (Surgical Implementation)
+1. **Fokus Tunggal**: Kerjakan tugas langkah demi langkah sesuai urutan dependensi logis.
+2. **Perubahan Bedah (*Surgical Changes*)**:
+   - Jangan "memperbaiki" kode, gaya, atau komentar di luar cakupan task.
+   - Jangan menambahkan abstraksi, fleksibilitas prematur, atau penanganan error spekulatif yang tidak diminta (*Ponytail Mode*).
 
+### Langkah 4: Goal-Driven Verification & Smoke Test Nyata
+1. **Zero Assumption**: Jangan pernah mengklaim tugas selesai hanya karena sintaks tidak error atau kode terlihat benar.
+2. **Smoke Test Wajib (`uv run`)**:
+   - Eksekusi nyata kode yang diubah (jalankan skrip, test import, validasi skema, atau panggil API).
+   - Patuhi *Test Output Policy*: saat pengujian lolos, tampilkan hanya `TEST DONE`.
+3. **Pemeriksaan Bukti Fisik**:
+   - Periksa langsung artefak nyata (inspeksi file yang terbuat, ukuran byte dokumen, struktur JSON/XML, atau output visual) sebelum menandai task selesai.
+4. **Update Status Real-Time**:
+   - Tandai to-do selesai (`done`) seketika setelah bukti verifikasi fisik diperoleh.
+
+### Langkah 5: Siklus Atomic Commits Terisolasi
+1. **Satu Unit Perubahan Logis**:
+   - Begitu 1 unit pekerjaan selesai dan terverifikasi, langsung lakukan commit sebelum berpindah ke tugas berikutnya.
+   - Dilarang menggabungkan perubahan dependensi, kode backend, dan dokumentasi ke dalam satu mega-commit.
+2. **Format Pesan Standar**:
+   - `feat: <deskripsi>`: Fitur, modul, atau generator baru.
+   - `fix: <deskripsi>`: Perbaikan bug atau koreksi logika.
+   - `docs: <deskripsi>`: Dokumen, flowchart, dan markdown.
+   - `chore: <deskripsi>`: Pengaturan dependensi (`pyproject.toml`), konfigurasi, atau env.
+3. **Kondisi Bersih**: Repositori harus selalu dalam kondisi *runnable* dan *clean* di setiap titik commit git.
 ---
 
 ## 13. Pedoman Standarisasi Dokumen DOCX & Tipografi
