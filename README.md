@@ -14,14 +14,25 @@ Sistem menghubungkan **3 Rumah Sakit Rujukan** (RSUD Dr. Soetomo, RSUD dr. Moham
 
 - **Google Spreadsheet (RAB & Matriks Klinis v2)**:  
   [Buka Google Spreadsheet](https://docs.google.com/spreadsheets/d/1J38nXV5J0ri4aM3_s0h6bYo-dELT1FO5RBnxITIlUtc/edit?usp=sharing)  
-  *Memuat rincian anggaran biaya pilot (Rp6,3 jt server-only vs Rp13,3 jt field-ready komprehensif) serta kamus lengkap pesan interaktif KF1–KF4.*
+  *Memuat rincian anggaran biaya pilot (Rp6,3 jt server-only vs Rp13,3 jt field-ready komprehensif) serta kamus lengkap pesan interaktif KF1–KF4 (Tab resmi: `RAB Revisi (3 Bulan)`).*
 
-- **Diagram Alir ISO/ANSI**:  
-  Lihat [`FLOWCHART.md`](FLOWCHART.md) untuk visualisasi bagan alir terinci.
+- **Dokumen Project Charter Formal (DOCX Lokal)**:  
+  `docs/PROJECT_CHARTER_MONITORING_NIFAS.docx`  
+  *Dokumen Word terstandarisasi dengan caption tabel formal dan flowchart beresolusi tinggi, dibuat via `uv run python tools/report_docs/main.py`.*
+
+- **Diagram Alir ISO/ANSI & Draw.io**:  
+  Lihat [`FLOWCHART.md`](FLOWCHART.md) untuk bagan alir Mermaid orthogonal serta direktori `docs/*.drawio` untuk berkas sumber visual.
 
 - **Pedoman Aturan Kerja & Standar Teknis**:  
   Lihat [`AGENTS.md`](AGENTS.md) untuk dokumentasi lengkap variabel, matriks klinis, dan aturan commit repositori.
 
+### Status Kesiapan Rekayasa Sistem
+| Fase Milestone | Cakupan Pekerjaan | Status |
+|---|---|---|
+| **M1: Desain & Spesifikasi** | Project Charter, RAB v2, Matriks KIA, Flowchart ANSI/ISO | **SELESAI (100%)** ✅ |
+| **M2: Backend Core & Engine** | FastAPI, SQLModel, Triage KIA, APScheduler, Seeder 13 Faskes | **SELESAI (100% Lulus Uji)** ✅ |
+| **M3: PWA Frontend UI** | Dashboard Triase Bidan, Registrasi Pasien, Panel Dinkes | **NEXT SPRINT (Pending)** ⏳ |
+| **M4: Pra-Deployment Lapangan** | Verifikasi WABA Meta, Provisi VPS Biznet GIO, Domain & SSL | **Fase M0 Lapangan** 📋 |
 ---
 
 ## 2. Prinsip Rekayasa Sistem (Core Principles)
@@ -110,13 +121,23 @@ pengmas-rs-surabaya/
 │   │   ├── whatsapp_service.py   # Meta Graph API client & generator direct wa.me
 │   │   └── scheduler.py          # APScheduler cron 08.00 WIB & batch rate limiter
 │   └── main.py                   # Inisialisasi FastAPI, lifespan, CORS, dan Swagger UI
-├── docs/                         # Dokumen charter docx dan diagram draw.io
+├── docs/                         # Dokumen charter docx, flowchart draw.io & panduan desain
+│   ├── Flowchart_1_manual.drawio # Diagram draw.io alur onboarding & pendaftaran
+│   ├── Flowchart_2.drawio        # Diagram draw.io alur triase deterministik KIA
+│   ├── Flowchart_3.drawio        # Diagram draw.io alur intervensi klinis bidan
+│   ├── Flowchart_4.drawio        # Diagram draw.io integrasi RBAC Dinkes Surabaya
+│   ├── DRAWIO_STYLE_GUIDE.md     # Panduan standarisasi visual dan palet warna medis
+│   ├── PROJECT_CHARTER_MONITORING_NIFAS.docx # Dokumen resmi charter nifas
+│   └── assets/                   # Render gambar PNG flowchart untuk dokumen
 ├── tests/
 │   └── smoke_test.py             # 9 pengujian end-to-end terautomasi
-├── tools/report_docs/            # Script generator DOCX lokal
+├── tools/report_docs/            # Script generator DOCX lokal berbasis OpenXML
 ├── docker-compose.yml            # Layanan PostgreSQL 16 containerized
 ├── pyproject.toml                # Dependensi Python terkelola via Astral uv
 ├── .env.example                  # Template variabel lingkungan aman
+├── FLOWCHART.md                  # Dokumentasi diagram alir Mermaid ANSI/ISO
+├── main.py                       # Root runner entrypoint praktis
+├── AGENTS.md                     # Pedoman aturan agen, RAB, & matriks klinis
 └── README.md                     # Dokumentasi arsitektur teknis sistem
 ```
 
@@ -220,6 +241,10 @@ uv run python -m app.db.seed
 
 ### Langkah 4: Menjalankan Server Backend
 ```bash
+# Opsi A: Menggunakan entrypoint runner root
+uv run python main.py
+
+# Opsi B: Menggunakan uvicorn reload langsung
 uv run uvicorn app.main:app --reload --port 8000
 ```
 - Dokumentasi API Interaktif (Swagger UI): **`http://localhost:8000/docs`**
