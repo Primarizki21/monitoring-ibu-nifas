@@ -1,8 +1,7 @@
-# Panduan Baku Desain Flowchart (Draw.io Style Guide)
+# Panduan Baku Desain Flowchart (Flowchart & Architecture Style Guide)
 
-Dokumen ini mendokumentasikan aturan baku (*style guide*) pembuatan dan penataan diagram alir (*flowchart*) sistem monitoring kesehatan ibu nifas, disarikan langsung dari berkas acuan manual **`Flowchart_1.drawio`**.
-
----
+Dokumen ini mendokumentasikan aturan baku (*style guide*) pembuatan dan penataan diagram alir (*flowchart*) sistem monitoring kesehatan ibu nifas.
+Seluruh diagram alir telah dimigrasikan secara penuh ke mesin **Python Matplotlib murni** (`tools/report_docs/chart_engine.py` & `flowchart_definitions.py`) untuk menghasilkan aset visual resolusi tinggi (300 DPI) secara deterministik tanpa ketergantungan Node.js atau Mermaid CLI.
 
 ## 1. Tata Letak Fase Horizontal (Horizontal Column Swimlanes)
 
@@ -89,3 +88,23 @@ Mengacu pada berkas acuan `Flowchart_1.drawio`:
   - Tipe garis: `orthogonalEdgeStyle` (siku-siku kaku 90 derajat, `curved=0`, `rounded=1`).
   - Ketebalan: `strokeWidth=2`, warna hitam `#000000`.
   - Kepala panah (*Arrowhead*): `endArrow=block; endSize=8;`.
+
+---
+
+## 5. Implementasi Mesin Python Matplotlib (`chart_engine.py`)
+
+Untuk menghilangkan ketergantungan rapuh pada manipulasi file XML dan CLI eksternal, seluruh aturan di atas telah dienkapsulasi ke dalam kode Python native:
+
+1. **Arsitektur Objek**:
+   - `Flowchart(figsize=(w, h), dpi=300)`: Mengelola canvas dan resolusi publikasi.
+   - `add_container()`: Menghasilkan wadah swimlane berbasis `matplotlib.patches.FancyBboxPatch` dengan palet hijau (`#F0FDF4` / `#4ADE80`) dan toska (`#F0FDFA` / `#2DD4BF`).
+   - `add_node()`: Menghasilkan 4 tipe bentuk baku (terminator, process, decision rhombus 4-point polygon, dan parallelogram I/O).
+   - `add_edge()`: Perutean ortogonal (`matplotlib.path.Path`) dengan penanda panah presisi `FancyArrowPatch(arrowstyle="-|>")`.
+2. **Perintah Eksekusi Render**:
+   ```bash
+   uv run python tools/report_docs/render_charts.py
+   ```
+3. **Penyusunan ke Dokumen Laporan DOCX**:
+   ```bash
+   uv run python tools/report_docs/main.py
+   ```
