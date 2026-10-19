@@ -115,7 +115,19 @@ Sistem pemantauan kesehatan ibu nifas terautomasi berbasis **WhatsApp** dan **PW
 2. **Lembar Kerja Anggaran & Matriks Pesan (Google Spreadsheet)**:
    - **Nama Resmi v2**: `[v2] RAB & Matriks Klinis — Sistem Monitoring Nifas Surabaya` (ID: `1J38nXV5J0ri4aM3_s0h6bYo-dELT1FO5RBnxITIlUtc`).
    - **Tautan Lembar Kerja**: [Buka Google Spreadsheet [v2] RAB & Matriks](https://docs.google.com/spreadsheets/d/1J38nXV5J0ri4aM3_s0h6bYo-dELT1FO5RBnxITIlUtc/edit?usp=sharing)
-
+   - **Catatan Validitas & Source of Truth**:
+     - Tab `RAB Revisi (3 Bulan)` adalah **Single Source of Truth** resmi (skenario Direct Meta API tanpa BSP, total Rp6.309.298).
+     - Tab `Biaya Bulanan` & `Biaya Pengerjaan` lama adalah arsip historis perbandingan sebelum eliminasi BSP.
+     - Berkas spreadsheet lama bertanggal 15 September 2026 (`1RwaxG0Nmfc4-EplrseKcDWcVBNmpsxVBTD7O4TpDJr8`) berstatus **DEPRECATED**.
+3. **Diagram Alir ISO/ANSI & Visualisasi Sistem**:
+   - **Berkas Spesifikasi Bagan Alir**: `FLOWCHART.md` (Notasi ANSI/ISO orthogonal Mermaid).
+   - **Berkas Sumber Desain Draw.io**: `docs/Flowchart_1_manual.drawio` s/d `Flowchart_4.drawio`.
+   - **Pedoman Visual**: `docs/DRAWIO_STYLE_GUIDE.md` (Palet warna klinis resmi & aturan koneksi 90° rigid).
+   - **Aset Render Resolusi Tinggi**: `docs/assets/flowchart_{1,2,3}_*.png`.
+4. **Kode Sumber Backend & Pengujian Terautomasi**:
+   - **Aplikasi Backend**: Direktori `app/` (FastAPI v2.0, SQLModel, Triage Engine, APScheduler).
+   - **Rangkaian Uji Otomatis**: `tests/smoke_test.py` (9 pengujian end-to-end tanpa mock eksternal).
+   - **Generator Laporan Formal**: `tools/report_docs/` (Automated DOCX builder berbasis standar OpenXML).
 ---
 
 ## 8. Rincian Lengkap Rencana Anggaran Biaya (RAB Pilot 3 Bulan)
@@ -215,8 +227,9 @@ Sistem menerapkan template pesan deterministik terstruktur sesuai algoritma Buku
    - Eksekusi deterministik dengan kecepatan dependency resolution tinggi melalui `uv`.
 2. **Framework Web & API**: **FastAPI (Asynchronous ASGI)**:
    - Menangani webhook masuk dari Meta WhatsApp Cloud API dengan latensi sub-detik (<1 detik).
-3. **Basis Data**: **PostgreSQL 16**:
+3. **Basis Data**: **PostgreSQL 16 & Dual-Engine Fallback**:
    - Standar relasional ACID untuk pencatatan rekam medis terenkripsi dan log triase multi-tenant.
+   - **Smart Fallback SQLite**: Sistem secara otomatis beralih ke SQLite lokal (`nifas_dev.db`) jika kontainer PostgreSQL Docker tidak aktif, memungkinkan testing lokal instan tanpa konfigurasi manual.
 4. **Konektivitas WhatsApp**: **Direct Meta WhatsApp Cloud API (Graph API v20+)**:
    - Tanpa perantara pihak ketiga; memanfaatkan kuota gratis dan tarif utility resmi Meta.
 5. **Server Komputasi**: **VPS Biznet GIO NEO Lite MM 8.8 (8 vCPU / 8 GB RAM)**:
@@ -228,15 +241,23 @@ Sistem menerapkan template pesan deterministik terstruktur sesuai algoritma Buku
 
 ---
 
-## 11. Roadmap Implementasi Lapangan (Pilot 3 Bulan)
+## 11. Roadmap Implementasi & Status Kesiapan Software
 
+### A. Status Kesiapan Rekayasa Sistem (Software Milestones)
+| Milestone Rekayasa | Cakupan Kerja & Deliverables | Status Saat Ini |
+|---|---|---|
+| **M1: Desain & Spesifikasi Medis** | Project Charter, RAB v2, Matriks Pesan KF1-KF4, Flowchart ANSI/ISO, Style Guide. | **SELESAI (100%)** |
+| **M2: Backend Core & Engine Triase** | FastAPI, SQLModel 8 entitas, seeder 13 Faskes Surabaya, APScheduler, direct wa.me, 9 smoke tests. | **SELESAI (100% Lulus)** |
+| **M3: Progressive Web App (PWA)** | Dashboard antrean triase bidan, pendaftaran discharge planning, panel agregat Dinkes Surabaya. | **NEXT SPRINT (Pending)** |
+| **M4: Pra-Deployment & Integrasi Meta** | Registrasi nomor resmi WABA Meta, setup VPS Biznet GIO, konfigurasi domain & SSL. | **Fase M0 Lapangan** |
+
+### B. Linimasa Operasional Lapangan (Pilot 3 Bulan)
 | Periode | Fase Lapangan | Target & Indikator Capaian Utama |
 |---|---|---|
 | **Minggu 0** | **Pra-Deployment** | Konfigurasi VPS, verifikasi nomor bot WABA resmi, setup akun 13 faskes mitra, simulasi end-to-end triase. |
 | **Minggu 1 – 4** | **Bulan 1 Live** | Peluncuran resmi di 13 faskes, sosialisasi bidan PJ, onboarding Kohort 1 (~500 ibu), pemantauan KF1 & KF2 harian. |
 | **Minggu 5 – 8** | **Bulan 2 Live** | Onboarding Kohort 2 (~500 ibu baru), pemantauan lanjutan Kohort 1 (KF3 & KF4), evaluasi respon bidan faskes terhadap alert triase. Total 1.000 ibu kumulatif. |
 | **Minggu 9 – 12** | **Bulan 3 Live** | Onboarding Kohort 3 (~500 ibu baru), kelulusan nifas 42 hari Kohort 1 & 2, penarikan data analitik epidemiologi Surabaya, serah terima laporan ke Dinkes. Total 1.500 ibu kumulatif. |
-
 ---
 
 ## 12. Workflow: Verifikasi Berulang & Atomic Commits
