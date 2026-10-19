@@ -120,10 +120,11 @@ Sistem pemantauan kesehatan ibu nifas terautomasi berbasis **WhatsApp** dan **PW
      - Tab `Biaya Bulanan` & `Biaya Pengerjaan` lama adalah arsip historis perbandingan sebelum eliminasi BSP.
      - Berkas spreadsheet lama bertanggal 15 September 2026 (`1RwaxG0Nmfc4-EplrseKcDWcVBNmpsxVBTD7O4TpDJr8`) berstatus **DEPRECATED**.
 3. **Diagram Alir ISO/ANSI & Visualisasi Sistem**:
-   - **Berkas Spesifikasi Bagan Alir**: `FLOWCHART.md` (Notasi ANSI/ISO orthogonal Mermaid).
-   - **Berkas Sumber Desain Draw.io**: `docs/Flowchart_1_manual.drawio` s/d `Flowchart_4.drawio`.
-   - **Pedoman Visual**: `docs/DRAWIO_STYLE_GUIDE.md` (Palet warna klinis resmi & aturan koneksi 90° rigid).
-   - **Aset Render Resolusi Tinggi**: `docs/assets/flowchart_{1,2,3}_*.png`.
+   - **Mesin Generator Visual Resmi**: `tools/report_docs/chart_engine.py` & `tools/report_docs/flowchart_definitions.py` (Mesin Python Matplotlib murni, deterministik 300 DPI, dieksekusi via `uv run python tools/report_docs/render_charts.py`).
+   - **Berkas Spesifikasi Bagan Alir**: `FLOWCHART.md` (Notasi ANSI/ISO orthogonal Mermaid untuk pratinjau daring).
+   - **Pedoman Visual**: `docs/DRAWIO_STYLE_GUIDE.md` (Palet warna klinis resmi & aturan perutean koneksi 90° rigid).
+   - **Aset Render Resolusi Tinggi (300 DPI)**: `docs/assets/flowchart_{1,2,3}_*.png` serta `docs/assets/flowchart_master.png`.
+   - **Berkas Sumber Desain Draw.io**: `docs/Flowchart_1_manual.drawio` s/d `Flowchart_4.drawio` (Arsip visual pendukung).
 4. **Kode Sumber Backend & Pengujian Terautomasi**:
    - **Aplikasi Backend**: Direktori `app/` (FastAPI v2.0, SQLModel, Triage Engine, APScheduler).
    - **Rangkaian Uji Otomatis**: `tests/smoke_test.py` (9 pengujian end-to-end tanpa mock eksternal).

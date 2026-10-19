@@ -7,6 +7,9 @@ Dokumen ini memuat diagram alir (*flowchart*) resmi sistem monitoring kesehatan 
 - **Keputusan / Percabangan**: Belah ketupat `{" ... "}`
 - **Garis Alur**: Orthogonal (koneksi 90 derajat rigid)
 
+> **Catatan Aset Publikasi & Cetak**:  
+> Diagram Mermaid di bawah ini digunakan untuk visualisasi Markdown interaktif di GitHub/web viewer. Seluruh aset diagram resmi beresolusi tinggi (300 DPI) untuk dokumen cetak dan Project Charter digenerate langsung menggunakan mesin Python Matplotlib murni via `uv run python tools/report_docs/render_charts.py` dan tersimpan di `docs/assets/`.
+
 ---
 
 ## 1. Flowchart End-to-End Sistem

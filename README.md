@@ -20,9 +20,8 @@ Sistem menghubungkan **3 Rumah Sakit Rujukan** (RSUD Dr. Soetomo, RSUD dr. Moham
   `docs/PROJECT_CHARTER_MONITORING_NIFAS.docx`  
   *Dokumen Word terstandarisasi dengan caption tabel formal dan flowchart beresolusi tinggi, dibuat via `uv run python tools/report_docs/main.py`.*
 
-- **Diagram Alir ISO/ANSI & Draw.io**:  
-  Lihat [`FLOWCHART.md`](FLOWCHART.md) untuk bagan alir Mermaid orthogonal serta direktori `docs/*.drawio` untuk berkas sumber visual.
-
+- **Diagram Alir ISO/ANSI & Generator Matplotlib**:  
+  Lihat [`FLOWCHART.md`](FLOWCHART.md) untuk bagan alir Mermaid orthogonal. Seluruh diagram formal resolusi tinggi (300 DPI) digenerate secara native via Python Matplotlib (`tools/report_docs/render_charts.py`), dengan berkas sumber arsip di `docs/*.drawio`.
 - **Pedoman Aturan Kerja & Standar Teknis**:  
   Lihat [`AGENTS.md`](AGENTS.md) untuk dokumentasi lengkap variabel, matriks klinis, dan aturan commit repositori.
 
@@ -122,16 +121,21 @@ pengmas-rs-surabaya/
 │   │   └── scheduler.py          # APScheduler cron 08.00 WIB & batch rate limiter
 │   └── main.py                   # Inisialisasi FastAPI, lifespan, CORS, dan Swagger UI
 ├── docs/                         # Dokumen charter docx, flowchart draw.io & panduan desain
-│   ├── Flowchart_1_manual.drawio # Diagram draw.io alur onboarding & pendaftaran
-│   ├── Flowchart_2.drawio        # Diagram draw.io alur triase deterministik KIA
-│   ├── Flowchart_3.drawio        # Diagram draw.io alur intervensi klinis bidan
-│   ├── Flowchart_4.drawio        # Diagram draw.io integrasi RBAC Dinkes Surabaya
+│   ├── Flowchart_1_manual.drawio # Arsip draw.io alur onboarding & pendaftaran
+│   ├── Flowchart_2.drawio        # Arsip draw.io alur triase deterministik KIA
+│   ├── Flowchart_3.drawio        # Arsip draw.io alur intervensi klinis bidan
+│   ├── Flowchart_4.drawio        # Arsip draw.io integrasi RBAC Dinkes Surabaya
 │   ├── DRAWIO_STYLE_GUIDE.md     # Panduan standarisasi visual dan palet warna medis
 │   ├── PROJECT_CHARTER_MONITORING_NIFAS.docx # Dokumen resmi charter nifas
-│   └── assets/                   # Render gambar PNG flowchart untuk dokumen
+│   └── assets/                   # Render gambar PNG flowchart (300 DPI) untuk dokumen
 ├── tests/
 │   └── smoke_test.py             # 9 pengujian end-to-end terautomasi
-├── tools/report_docs/            # Script generator DOCX lokal berbasis OpenXML
+├── tools/report_docs/            # Engine diagram Matplotlib & builder DOCX lokal
+│   ├── chart_engine.py           # Engine perutean ortogonal & shapes Matplotlib
+│   ├── flowchart_definitions.py  # Definisi 4 alur diagram (Onboarding, Triase, Intervensi, Master)
+│   ├── render_charts.py          # Runner render aset gambar PNG (300 DPI)
+│   ├── builder.py                # Modul perakit dokumen DOCX berbasis OpenXML
+│   └── main.py                   # Entrypoint kompilasi Project Charter DOCX
 ├── docker-compose.yml            # Layanan PostgreSQL 16 containerized
 ├── pyproject.toml                # Dependensi Python terkelola via Astral uv
 ├── .env.example                  # Template variabel lingkungan aman
@@ -311,7 +315,20 @@ curl -X POST "http://localhost:8000/api/v1/mothers" \
 ```
 
 ---
+## 11. Generator Diagram Alir & Laporan Formal
 
-## 11. Informasi Keamanan & Kerahasiaan
+Repositori menyediakan toolchain lokal murni Python untuk merender diagram beresolusi tinggi (300 DPI) dan mengompilasi dokumen Project Charter:
+
+```bash
+# 1. Render ulang seluruh gambar flowchart (300 DPI) ke docs/assets/
+uv run python tools/report_docs/render_charts.py
+
+# 2. Kompilasi dokumen resmi Project Charter DOCX
+uv run python tools/report_docs/main.py
+```
+
+---
+
+## 12. Informasi Keamanan & Kerahasiaan
 
 Repositori ini **bebas dari kredensial rahasia, nomor telepon pribadi, dan token produksi**. Variabel pada `.env.example` menggunakan nilai contoh (*dummy*) untuk simulasi lokal. Token akses Meta Cloud API dan basis data produksi dikonfigurasikan secara terisolasi pada lingkungan server deployment.
