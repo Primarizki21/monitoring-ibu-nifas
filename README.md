@@ -1,9 +1,8 @@
-# Sistem Monitoring Kesehatan Ibu Nifas Surabaya (v2.0)
+# Sistem Monitoring Kesehatan Ibu Nifas Surabaya (SIM-NIFAS Surabaya)
 
-Sistem pemantauan kesehatan ibu nifas terautomasi berbasis **WhatsApp Cloud API** dan **Progressive Web App (PWA)** untuk kegiatan Pengabdian Masyarakat (Pengmas) di Kota Surabaya.
-
-Sistem menghubungkan **3 Rumah Sakit Rujukan** (RSUD Dr. Soetomo, RSUD dr. Mohamad Soewandhie, RSUD Bhakti Dharma Husada) dan **10 Puskesmas Mitra** di Surabaya untuk mengawal ibu pascasalin selama **42 hari nifas penuh (KF1 s/d KF4)**.
-
+> **Cabang Fitur (`feature/sim-nifas-discharge-monitoring`)**:  
+> Implementasi prototype penuh sesuai **Product Requirement Document (PRD)**: *Sistem Informasi Monitoring Discharge Planning Ibu Nifas Kota Surabaya*.  
+> Berfokus pada kontinuitas pemulangan pasien (KRS) dari Rumah Sakit ke FKTP, penegakan **SLA Kunjungan Rumah 48 Jam** ($2 \times 24\text{ jam}$) oleh Bidan Kelurahan, pelaporan via web token tanpa login rumit, serta Dashboard Eksekutif 10 Kartu Indikator KPI Dinkes & Puskesmas.
 ---
 
 ## 1. Dokumen Resmi Proyek (Versi 2.0)
@@ -238,54 +237,56 @@ Pilih salah satu metode basis data:
   Sistem secara otomatis mendeteksi ketersediaan PostgreSQL. Jika kontainer Docker tidak berjalan, sistem otomatis beralih ke file SQLite lokal (`nifas_dev.db`). Developer dapat langsung menjalankan kode tanpa konfigurasi tambahan.
 
 ### Langkah 3: Mengisi Data Awal (Seeding)
-Isi database dengan data 13 faskes resmi Surabaya, akun nakes, dan 5 pasien percontohan:
+Isi database dengan data master wilayah Surabaya (6 Kecamatan, 14 Puskesmas, 31 Kelurahan, 6 Rumah Sakit) dan sampel kasus kunjungan:
 ```bash
-uv run python -m app.db.seed
+# Seeding data PRD SIM-NIFAS Surabaya (Discharge, Home Visit, & Red Alert)
+uv run python -m app.db.prd_seed
 ```
 
 ### Langkah 4: Menjalankan Server Backend
 ```bash
-# Opsi A: Menggunakan entrypoint runner root
-uv run python main.py
-
-# Opsi B: Menggunakan uvicorn reload langsung
+# Jalankan server FastAPI
+uv run python -m app.main
+# atau menggunakan uvicorn reload
 uv run uvicorn app.main:app --reload --port 8000
 ```
 - Dokumentasi API Interaktif (Swagger UI): **`http://localhost:8000/docs`**
 - Dokumentasi Alternatif (ReDoc): **`http://localhost:8000/redoc`**
 - Endpoint Pemeriksaan Kesehatan: **`http://localhost:8000/health`**
 
-### Langkah 5: Menjalankan Frontend PWA (Next.js 15 + shadcn/ui)
+### Langkah 5: Menjalankan Frontend PWA (Next.js 16 + shadcn/ui)
 ```bash
 cd frontend
 pnpm dev
 ```
-- Akses Dashboard Antarmuka: **`http://localhost:3000`**
-  - Antrean Triase Pasien: `http://localhost:3000/triage`
-  - Registrasi Discharge Planning: `http://localhost:3000/register`
-  - Panel Agregat Dinkes Surabaya: `http://localhost:3000/dinkes`
-  - Fitur Khusus Demo: Floating Tool **"Simulasi WA Bot"** di pojok kanan bawah.
+Buka browser di **`http://localhost:3000`**:
+- **`http://localhost:3000/`** (atau `/dinkes`): **Dashboard Eksekutif 10 Kartu KPI**, filter wilayah interaktif, Floating Red Alert Banner, visualisasi grafik tren kunjungan harian, proporsi status kesehatan donut, dan tabel data operasional.
+- **`http://localhost:3000/register`**: **Formulir Pemulangan Pasien KRS (Bidan RS)** dengan cascading dropdown Kecamatan $\rightarrow$ Kelurahan $\rightarrow$ Puskesmas Pembina otomatis, kalkulator batas SLA 48h live, dan penerbitan token kunjungan.
+- **`http://localhost:3000/visit/[token]`**: **Formulir Kunjungan Rumah Bidan Kelurahan** berbasis tautan token tanpa login, input suhu tubuh, checklist tanda bahaya, dan triase otomatis.
+- **`http://localhost:3000/simulator`**: **Simulator WhatsApp Gateway** untuk menguji 5 template pesan PRD (`WA-ASSIGN-01`, `WA-REMIND-24H`, `WA-ALERT-48H`, `WA-EDU-PASIEN`, `WA-EMERGENCY`) dan tombol langsung buka formulir kunjungan.
+- **`http://localhost:3000/triage`**: Antrean triase nifas harian.
+
 ---
 
 ## 9. Verifikasi Otomatis (Smoke Test Suite)
 
-Repositori dilengkapi rangkaian uji otomatis menyeluruh tanpa mock eksternal yang mencakup 9 skenario inti:
+Jalankan pengujian otomatis end-to-end PRD SIM-NIFAS:
 
 ```bash
-uv run python tests/smoke_test.py
+PYTHONPATH=. uv run python -m tests.prd_smoke_test
 ```
 
-Rangkaian pengujian memverifikasi:
-1. Endpoint status kesehatan sistem (`/health`).
-2. Ketersediaan master data 13 Faskes Surabaya.
-3. Kepatuhan isolasi tenant (`X-Faskes-ID`).
-4. Pendaftaran pasien baru saat discharge planning dan pembuatan 4 jadwal KF otomatis.
-5. Verifikasi challenge token Meta Webhook (GET).
-6. Transisi status onboarding pasien saat membalas pesan afirmasi.
-7. Evaluasi triase deterministik (deteksi kondisi Merah pada KF1).
-8. Prioritisasi antrean triase dan pembuatan link `wa.me` pre-filled untuk ibu dan suami.
-9. Pencatatan intervensi bidan dan penerbitan entri `audit_logs`.
-
+Rangkaian pengujian memverifikasi 10 skenario inti:
+1. Ketersediaan master data hierarki wilayah (Kecamatan, Puskesmas, Kelurahan).
+2. Ketersediaan master data Rumah Sakit Rujukan Surabaya.
+3. Pendaftaran pemulangan pasien (KRS) oleh Bidan RS dan penetapan SLA 48 jam.
+4. Pembuatan token kunjungan unik dan audit log notifikasi WhatsApp (`WA-ASSIGN-01`, `WA-EDU-PASIEN`).
+5. Akses formulir kunjungan rumah via URL token tanpa otentikasi rumit.
+6. Pelaporan kunjungan rumah tepat waktu (&le;48 jam) dan deteksi triase tanda bahaya (suhu >38°C).
+7. Penerbitan status kedaruratan *Red Alert* dan notifikasi darurat `WA-EMERGENCY`.
+8. Kalkulasi 10 kartu indikator utama KPI pada dashboard eksekutif Dinkes.
+9. Pengambilan daftar operasional pasien beserta status SLA dan link kunjungan.
+10. Penyelesaian kasus darurat (*resolve*) dan pengarsipan tindakan medis.
 ---
 
 ## 10. Contoh Uji Endpoint Cepat (cURL)
