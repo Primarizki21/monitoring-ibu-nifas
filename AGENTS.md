@@ -249,7 +249,7 @@ Sistem menerapkan template pesan deterministik terstruktur sesuai algoritma Buku
 |---|---|---|
 | **M1: Desain & Spesifikasi Medis** | Project Charter, RAB v2, Matriks Pesan KF1-KF4, Flowchart ANSI/ISO, Style Guide. | **SELESAI (100%)** |
 | **M2: Backend Core & Engine Triase** | FastAPI, SQLModel 8 entitas, seeder 13 Faskes Surabaya, APScheduler, direct wa.me, 9 smoke tests. | **SELESAI (100% Lulus)** |
-| **M3: Progressive Web App (PWA)** | Dashboard antrean triase bidan, pendaftaran discharge planning, panel agregat Dinkes Surabaya. | **NEXT SPRINT (Pending)** |
+| **M3: Progressive Web App (PWA)** | Dashboard antrean triase bidan, pendaftaran discharge planning, panel agregat Dinkes Surabaya (Next.js 15 + shadcn/ui). | **SELESAI (100% Siap Mockup)** |
 | **M4: Pra-Deployment & Integrasi Meta** | Registrasi nomor resmi WABA Meta, setup VPS Biznet GIO, konfigurasi domain & SSL. | **Fase M0 Lapangan** |
 
 ### B. Linimasa Operasional Lapangan (Pilot 3 Bulan)

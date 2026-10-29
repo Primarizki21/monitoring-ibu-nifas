@@ -30,7 +30,7 @@ Sistem menghubungkan **3 Rumah Sakit Rujukan** (RSUD Dr. Soetomo, RSUD dr. Moham
 |---|---|---|
 | **M1: Desain & Spesifikasi** | Project Charter, RAB v2, Matriks KIA, Flowchart ANSI/ISO | **SELESAI (100%)** ✅ |
 | **M2: Backend Core & Engine** | FastAPI, SQLModel, Triage KIA, APScheduler, Seeder 13 Faskes | **SELESAI (100% Lulus Uji)** ✅ |
-| **M3: PWA Frontend UI** | Dashboard Triase Bidan, Registrasi Pasien, Panel Dinkes | **NEXT SPRINT (Pending)** ⏳ |
+| **M3: PWA Frontend UI** | Dashboard Triase Bidan, Registrasi Pasien, Panel Dinkes (Next.js 15 + shadcn/ui) | **SELESAI (100% Siap Mockup)** ✅ |
 | **M4: Pra-Deployment Lapangan** | Verifikasi WABA Meta, Provisi VPS Biznet GIO, Domain & SSL | **Fase M0 Lapangan** 📋 |
 ---
 
@@ -255,6 +255,16 @@ uv run uvicorn app.main:app --reload --port 8000
 - Dokumentasi Alternatif (ReDoc): **`http://localhost:8000/redoc`**
 - Endpoint Pemeriksaan Kesehatan: **`http://localhost:8000/health`**
 
+### Langkah 5: Menjalankan Frontend PWA (Next.js 15 + shadcn/ui)
+```bash
+cd frontend
+pnpm dev
+```
+- Akses Dashboard Antarmuka: **`http://localhost:3000`**
+  - Antrean Triase Pasien: `http://localhost:3000/triage`
+  - Registrasi Discharge Planning: `http://localhost:3000/register`
+  - Panel Agregat Dinkes Surabaya: `http://localhost:3000/dinkes`
+  - Fitur Khusus Demo: Floating Tool **"Simulasi WA Bot"** di pojok kanan bawah.
 ---
 
 ## 9. Verifikasi Otomatis (Smoke Test Suite)
