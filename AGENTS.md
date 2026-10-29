@@ -308,6 +308,11 @@ Sebelum menulis rencana atau menyentuh kode, identifikasi domain pekerjaan dan b
    - `docs: <deskripsi>`: Dokumen, flowchart, dan markdown.
    - `chore: <deskripsi>`: Pengaturan dependensi (`pyproject.toml`), konfigurasi, atau env.
 3. **Kondisi Bersih**: Repositori harus selalu dalam kondisi *runnable* dan *clean* di setiap titik commit git.
+4. **DILARANG KERAS GIT PUSH OLEH AGEN (Strictly NO Git Push by Agent)**:
+   - Agen / Asisten AI **DILARANG KERAS** mengeksekusi perintah `git push` ke remote repository (GitHub/GitLab) dalam kondisi apa pun, termasuk flag `-u`, `--force`, atau `--dry-run`.
+   - Hak push ke remote adalah **hak prerogatif eksklusif Pengguna (Human User)** demi keamanan branch dan kontrol versioning.
+   - Lingkup wewenang agen hanya sebatas: pengeditan file, pengujian lokal (`smoke test`), penyiapan dependensi, dan pembuatan **commit git lokal (`git commit`)**.
+   - Setelah pekerjaan lokal selesai dan ter-commit, agen hanya boleh melaporkan status lokal dan menampilkan perintah `git push` agar pengguna dapat mengeksekusinya secara mandiri jika disetujui.
 ---
 
 ## 13. Pedoman Standarisasi Dokumen DOCX & Tipografi
