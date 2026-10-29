@@ -127,9 +127,11 @@ pengmas-rs-surabaya/
 │   ├── Flowchart_4.drawio        # Arsip draw.io integrasi RBAC Dinkes Surabaya
 │   ├── DRAWIO_STYLE_GUIDE.md     # Panduan standarisasi visual dan palet warna medis
 │   ├── PROJECT_CHARTER_MONITORING_NIFAS.docx # Dokumen resmi charter nifas
+│   ├── PRD_SIM_NIFAS_SURABAYA.md # PRD discharge planning & kunjungan rumah 2x24 jam (prototipe web)
 │   └── assets/                   # Render gambar PNG flowchart (300 DPI) untuk dokumen
 ├── tests/
 │   └── smoke_test.py             # 9 pengujian end-to-end terautomasi
+├── web/                          # Prototipe demo PWA: Next.js + Supabase (lihat web/README.md)
 ├── tools/report_docs/            # Engine diagram Matplotlib & builder DOCX lokal
 │   ├── chart_engine.py           # Engine perutean ortogonal & shapes Matplotlib
 │   ├── flowchart_definitions.py  # Definisi 4 alur diagram (Onboarding, Triase, Intervensi, Master)
