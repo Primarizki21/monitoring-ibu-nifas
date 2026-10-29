@@ -8,6 +8,14 @@ import {
   TriageQueueItem,
   TriageResult,
   UserRole,
+  MasterWilayahKecamatan,
+  RawKelurahan,
+  MasterRumahSakit,
+  DischargeCreatePayload,
+  DischargeListItem,
+  VisitDetailResponse,
+  VisitSubmitPayload,
+  DashboardAnalyticsData,
 } from './types';
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -166,5 +174,121 @@ export async function simulateWebhookResponse(
     }),
   });
   if (!res.ok) throw new Error('Gagal mengirim simulasi balasan WhatsApp');
+  return res.json();
+}
+
+// ==========================================
+// PRD SIM-NIFAS API METHODS
+// ==========================================
+
+export async function fetchMasterWilayah(): Promise<{
+  success: boolean;
+  data: MasterWilayahKecamatan[];
+  raw_kelurahan: RawKelurahan[];
+}> {
+  const res = await fetch(`${API_BASE_URL}/master/wilayah`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Gagal memuat master wilayah Surabaya');
+  return res.json();
+}
+
+export async function fetchMasterRumahSakit(): Promise<{
+  success: boolean;
+  data: MasterRumahSakit[];
+}> {
+  const res = await fetch(`${API_BASE_URL}/master/rumah-sakit`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Gagal memuat master Rumah Sakit');
+  return res.json();
+}
+
+export async function createDischarge(
+  payload: DischargeCreatePayload
+): Promise<{ success: boolean; message: string; data: any }> {
+  const res = await fetch(`${API_BASE_URL}/discharge`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Gagal menyimpan data pemulangan (KRS)');
+  }
+  return res.json();
+}
+
+export async function fetchVisitByToken(
+  token: string
+): Promise<{ success: boolean; data: VisitDetailResponse }> {
+  const res = await fetch(`${API_BASE_URL}/visit/${token}`, { cache: 'no-store' });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Tautan kunjungan tidak ditemukan atau kadaluarsa');
+  }
+  return res.json();
+}
+
+export async function submitVisitReport(
+  payload: VisitSubmitPayload
+): Promise<{ success: boolean; message: string; data: any }> {
+  const res = await fetch(`${API_BASE_URL}/visit/submit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Gagal menyimpan laporan kunjungan rumah');
+  }
+  return res.json();
+}
+
+export async function fetchDashboardAnalytics(params?: {
+  start_date?: string;
+  end_date?: string;
+  puskesmas_id?: string;
+  kelurahan_id?: string;
+}): Promise<{ success: boolean; data: DashboardAnalyticsData }> {
+  const url = getFullUrl('/dashboard/analytics');
+  if (params?.start_date) url.searchParams.set('start_date', params.start_date);
+  if (params?.end_date) url.searchParams.set('end_date', params.end_date);
+  if (params?.puskesmas_id) url.searchParams.set('puskesmas_id', params.puskesmas_id);
+  if (params?.kelurahan_id) url.searchParams.set('kelurahan_id', params.kelurahan_id);
+
+  const res = await fetch(url.toString(), { cache: 'no-store' });
+  if (!res.ok) throw new Error('Gagal memuat analitik dashboard');
+  return res.json();
+}
+
+export async function fetchDischarges(params?: {
+  status_kunjungan?: string;
+  status_kesehatan?: string;
+  kelurahan_id?: string;
+  puskesmas_id?: string;
+  search?: string;
+}): Promise<{ success: boolean; data: DischargeListItem[] }> {
+  const url = getFullUrl('/discharges');
+  if (params?.status_kunjungan) url.searchParams.set('status_kunjungan', params.status_kunjungan);
+  if (params?.status_kesehatan) url.searchParams.set('status_kesehatan', params.status_kesehatan);
+  if (params?.kelurahan_id) url.searchParams.set('kelurahan_id', params.kelurahan_id);
+  if (params?.puskesmas_id) url.searchParams.set('puskesmas_id', params.puskesmas_id);
+  if (params?.search) url.searchParams.set('search', params.search);
+
+  const res = await fetch(url.toString(), { cache: 'no-store' });
+  if (!res.ok) throw new Error('Gagal memuat daftar pasien pemulangan');
+  return res.json();
+}
+
+export async function resolveEmergencyAlert(
+  alertId: string,
+  catatanTindakan: string
+): Promise<{ success: boolean; message: string }> {
+  const res = await fetch(`${API_BASE_URL}/emergency-alert/resolve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      alert_id: alertId,
+      catatan_tindakan: catatanTindakan,
+    }),
+  });
+  if (!res.ok) throw new Error('Gagal menyelesaikan alert kedaruratan');
   return res.json();
 }

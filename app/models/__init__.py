@@ -28,6 +28,20 @@ from app.models.mother import (
 )
 from app.models.screening import ScreeningLog, ScreeningSchedule
 from app.models.user import User, UserBase, UserRead
+from app.models.prd_models import (
+    RolePengguna,
+    StatusSLAKunjungan,
+    StatusKesehatanIbu,
+    TipeFaskesRujukan,
+    MPuskesmas,
+    MKelurahan,
+    MRumahSakit,
+    PRDUser,
+    TrDischarge,
+    TrHomeVisit,
+    TrEmergencyAlert,
+    LogNotifikasiWA,
+)
 
 __all__ = [
     "FaskesKategori",
@@ -59,4 +73,16 @@ __all__ = [
     "InterventionCreate",
     "InterventionRead",
     "AuditLog",
+    "RolePengguna",
+    "StatusSLAKunjungan",
+    "StatusKesehatanIbu",
+    "TipeFaskesRujukan",
+    "MPuskesmas",
+    "MKelurahan",
+    "MRumahSakit",
+    "PRDUser",
+    "TrDischarge",
+    "TrHomeVisit",
+    "TrEmergencyAlert",
+    "LogNotifikasiWA",
 ]

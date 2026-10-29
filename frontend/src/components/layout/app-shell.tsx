@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { TenantProvider } from '@/lib/tenant-context';
 import { Header } from '@/components/layout/header';
 import { Navigation } from '@/components/layout/navigation';
@@ -22,10 +22,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <TenantProvider>
       <div className="min-h-screen flex flex-col bg-background text-foreground antialiased selection:bg-teal-500/20">
         <Header onOpenSimulator={() => setSimulatorOpen(true)} />
-        <Navigation />
+        <Suspense fallback={<div className="h-10 border-b bg-muted/40" />}>
+          <Navigation />
+        </Suspense>
 
         <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6" data-refresh={refreshTrigger}>
-          {children}
+          <Suspense fallback={<div className="py-12 text-center text-xs text-muted-foreground">Memuat halaman...</div>}>
+            {children}
+          </Suspense>
         </main>
 
         {/* Floating Demo Trigger Button (Bottom-Right FAB) */}
