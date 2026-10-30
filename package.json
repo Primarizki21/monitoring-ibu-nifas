@@ -1,0 +1,20 @@
+{
+  "name": "sim-nifas-surabaya",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sistem Monitoring Kesehatan Ibu Nifas Surabaya (SIM-NIFAS)",
+  "scripts": {
+    "setup": "node -e \"const fs=require('fs'); if(!fs.existsSync('.env')) fs.copyFileSync('.env.example','.env');\" && uv sync && uv run python -m app.db.prd_seed && pnpm --prefix frontend install",
+    "dev": "concurrently -k -n \"backend,frontend\" -c \"blue.bold,cyan.bold\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "uv run uvicorn app.main:app --reload --port 8000",
+    "dev:frontend": "pnpm --prefix frontend dev",
+    "seed": "uv run python -m app.db.prd_seed",
+    "seed:legacy": "uv run python -m app.db.seed",
+    "test": "uv run python -m tests.prd_smoke_test",
+    "test:all": "uv run python -m tests.prd_smoke_test && uv run python -m tests.smoke_test",
+    "build:frontend": "pnpm --prefix frontend build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

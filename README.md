@@ -210,61 +210,72 @@ Untuk memenuhi prinsip kerahasiaan rekam medis, sistem menerapkan isolasi tenant
 
 ## 8. Panduan Menjalankan Sistem (Developer Quickstart)
 
-Proyek ini dikelola menggunakan paket manajer modern **Astral `uv`**.
-
 ### Prasyarat
-- Python 3.12+
-- Astral `uv` (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
-- Docker & Docker Compose (opsional untuk basis data PostgreSQL)
+- Python 3.12+ & Astral `uv` (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
+- Node.js 20+ & `pnpm` (atau `npm`)
+- Docker & Docker Compose (opsional, jika tidak ada sistem otomatis fallback ke SQLite lokal `nifas_dev.db`)
 
-### Langkah 1: Persiapan Environment
+---
+
+### 🚀 Cara Paling Praktis (Unified 2-Command Quickstart)
+
+Cukup jalankan 2 perintah berikut di root folder proyek:
+
 ```bash
-# Salin template environment
-cp .env.example .env
+# Langkah 1: Setup otomatis (buat .env jika belum ada, uv sync, seed DB PRD, & install frontend)
+pnpm run setup   # atau: npm run setup / make setup
 
-# Sinkronisasi dependensi virtual environment
-uv sync
+# Langkah 2: Jalankan Backend & Frontend sekaligus dalam 1 terminal
+pnpm run dev     # atau: npm run dev / make dev
 ```
 
-### Langkah 2: Menjalankan Basis Data
-Pilih salah satu metode basis data:
+> **Catatan**: Perintah `dev` menjalankan server FastAPI (`localhost:8000`) dan Next.js Turbopack (`localhost:3000`) secara bersamaan dengan label output berwarna. Saat `Ctrl+C` ditekan, kedua server dimatikan secara bersih tanpa meninggalkan proses zombie di port 8000/3000.
 
-- **Opsi A: Menggunakan PostgreSQL 16 (Rekomendasi Docker)**:
-  ```bash
-  docker compose up -d
-  ```
-- **Opsi B: Fallback SQLite Lokal (Tanpa Docker)**:  
-  Sistem secara otomatis mendeteksi ketersediaan PostgreSQL. Jika kontainer Docker tidak berjalan, sistem otomatis beralih ke file SQLite lokal (`nifas_dev.db`). Developer dapat langsung menjalankan kode tanpa konfigurasi tambahan.
+---
 
-### Langkah 3: Mengisi Data Awal (Seeding)
-Isi database dengan data master wilayah Surabaya (6 Kecamatan, 14 Puskesmas, 31 Kelurahan, 6 Rumah Sakit) dan sampel kasus kunjungan:
-```bash
-# Seeding data PRD SIM-NIFAS Surabaya (Discharge, Home Visit, & Red Alert)
-uv run python -m app.db.prd_seed
-```
+### 📋 Tabel Perintah Cepat (Root Command Reference)
 
-### Langkah 4: Menjalankan Server Backend
-```bash
-# Jalankan server FastAPI
-uv run python -m app.main
-# atau menggunakan uvicorn reload
-uv run uvicorn app.main:app --reload --port 8000
-```
-- Dokumentasi API Interaktif (Swagger UI): **`http://localhost:8000/docs`**
-- Dokumentasi Alternatif (ReDoc): **`http://localhost:8000/redoc`**
-- Endpoint Pemeriksaan Kesehatan: **`http://localhost:8000/health`**
+| Perintah (npm / pnpm) | Perintah (Make) | Deskripsi / Fungsi |
+|---|---|---|
+| `pnpm run setup` | `make setup` | Setup otomatis awal (.env, `uv sync`, `prd_seed`, frontend install). |
+| `pnpm run dev` | `make dev` | Menjalankan Backend (port 8000) & Frontend (port 3000) sekaligus. |
+| `pnpm run dev:backend` | `make dev-backend` | Menjalankan hanya Backend FastAPI (`app.main:app --reload`). |
+| `pnpm run dev:frontend` | `make dev-frontend` | Menjalankan hanya Frontend PWA Next.js 16. |
+| `pnpm run seed` | `make seed` | Mengisi data master wilayah Surabaya, 6 RS, dan data uji awal. |
+| `pnpm test` | `make test` | Menjalankan 10 skenario smoke test terautomasi PRD SIM-NIFAS. |
+| `pnpm run test:all` | `make test-all` | Menjalankan smoke test PRD dan smoke test klinis legacy. |
+| `pnpm run build:frontend` | `make build-frontend` | Menguji build produksi frontend Next.js. |
 
-### Langkah 5: Menjalankan Frontend PWA (Next.js 16 + shadcn/ui)
-```bash
-cd frontend
-pnpm dev
-```
-Buka browser di **`http://localhost:3000`**:
-- **`http://localhost:3000/`** (atau `/dinkes`): **Dashboard Eksekutif 10 Kartu KPI**, filter wilayah interaktif, Floating Red Alert Banner, visualisasi grafik tren kunjungan harian, proporsi status kesehatan donut, dan tabel data operasional.
-- **`http://localhost:3000/register`**: **Formulir Pemulangan Pasien KRS (Bidan RS)** dengan cascading dropdown Kecamatan $\rightarrow$ Kelurahan $\rightarrow$ Puskesmas Pembina otomatis, kalkulator batas SLA 48h live, dan penerbitan token kunjungan.
-- **`http://localhost:3000/visit/[token]`**: **Formulir Kunjungan Rumah Bidan Kelurahan** berbasis tautan token tanpa login, input suhu tubuh, checklist tanda bahaya, dan triase otomatis.
-- **`http://localhost:3000/simulator`**: **Simulator WhatsApp Gateway** untuk menguji 5 template pesan PRD (`WA-ASSIGN-01`, `WA-REMIND-24H`, `WA-ALERT-48H`, `WA-EDU-PASIEN`, `WA-EMERGENCY`) dan tombol langsung buka formulir kunjungan.
-- **`http://localhost:3000/triage`**: Antrean triase nifas harian.
+---
+
+### ⚙️ Alur Manual Langkah demi Langkah (Opsional)
+
+Bila ingin menjalankan setiap komponen secara terpisah:
+
+1. **Persiapan Environment**:
+   ```bash
+   cp .env.example .env
+   uv sync
+   ```
+2. **Basis Data**:
+   - **PostgreSQL**: `docker compose up -d`
+   - **SQLite**: Otomatis aktif jika Docker tidak berjalan (`nifas_dev.db`).
+3. **Seeding Database**:
+   ```bash
+   uv run python -m app.db.prd_seed
+   ```
+4. **Menjalankan Backend**:
+   ```bash
+   uv run uvicorn app.main:app --reload --port 8000
+   ```
+5. **Menjalankan Frontend**:
+   ```bash
+   cd frontend && pnpm dev
+   ```
+
+Buka browser di:
+- Frontend: **`http://localhost:3000`** (`/dinkes`, `/register`, `/visit/[token]`, `/simulator`, `/triage`)
+- Swagger API Docs: **`http://localhost:8000/docs`**
 
 ---
 
