@@ -8,14 +8,15 @@ import { createClient } from "@/lib/supabase/server";
 async function masuk(formData: FormData) {
   "use server";
   const supabase = await createClient();
+  const email = String(formData.get("email") || "");
   const { error } = await supabase.auth.signInWithPassword({
-    email: String(formData.get("email")),
-    password: String(formData.get("password")),
+    email,
+    password: String(formData.get("password") || ""),
   });
   const next = String(formData.get("next") || "");
   // Salah kata sandi itu wajar; selain itu (jaringan, konfigurasi) perlu terlihat di log server.
   if (error && error.code !== "invalid_credentials") console.error("login gagal:", error.status, error.code, error.message);
-  if (error) redirect(`/login?gagal=1&next=${encodeURIComponent(next)}`);
+  if (error) redirect(`/login?gagal=1&email=${encodeURIComponent(email)}&next=${encodeURIComponent(next)}`);
   if (next.startsWith("/") && next !== "/") redirect(next);
   // Tanpa tujuan khusus: arahkan ke halaman kerja sesuai peran, bukan kembali ke beranda.
   const { data: profil } = await supabase.rpc("profil_saya").maybeSingle<Profil>();
@@ -25,9 +26,9 @@ async function masuk(formData: FormData) {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ gagal?: string; next?: string }>;
+  searchParams: Promise<{ gagal?: string; next?: string; email?: string }>;
 }) {
-  const { gagal, next } = await searchParams;
+  const { gagal, next, email } = await searchParams;
 
   return (
     <main className="mx-auto grid min-h-screen max-w-6xl items-center gap-8 px-4 py-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-14">
@@ -57,7 +58,7 @@ export default async function LoginPage({
           <input type="hidden" name="next" value={next ?? ""} />
           <label className="block text-sm font-semibold">
             Email
-            <input name="email" type="email" required autoComplete="email" placeholder="nama@puskesmas.go.id" className="input mt-1.5" />
+            <input name="email" type="email" defaultValue={email ?? ""} required autoComplete="email" placeholder="nama@puskesmas.go.id" className="input mt-1.5" />
           </label>
           <label className="block text-sm font-semibold">
             Kata sandi
