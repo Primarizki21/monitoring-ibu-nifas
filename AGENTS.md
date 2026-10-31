@@ -274,6 +274,17 @@ Sebelum menulis rencana atau menyentuh kode, identifikasi domain pekerjaan dan b
    - Terapkan standar bebas AI-slop: uji tujuan (*purpose-test*), bebas elemen interaktif mati (C-2), tidak ada klaim/data palsu (C-5), kontras WCAG AA, dan lulus *Delivery Gate*.
 3. **`skill://karpathy-guidelines`**:
    - Selalu terapkan: *Think Before Coding* (tanpa asumsi, tanyakan ambiguitas), *Simplicity First* (kode minimal tanpa over-engineering), dan *Surgical Changes* (hanya sentuh baris yang relevan).
+4. **`skill://database-schema-designer` & `skill://database-migrations` (Wajib saat Terkait Basis Data, Skema, Indexing, Query, atau SQL)**:
+   - Setiap tugas yang menyentuh tabel, skema, indeks, query performa, atau file migrasi SQL di `web/supabase/migrations/` atau `app/models/` **WAJIB membaca kedua skill ini terlebih dahulu**.
+   - **Prinsip Skema (`database-schema-designer`)**:
+     a. *Integrity & FK Indexes*: Semua Foreign Key wajib memiliki indeks untuk mencegah *table lock* dan *slow join*.
+     b. *Composite Indexing*: Buat indeks gabungan sesuai urutan selektivitas query (`puskesmas_id`, `waktu_krs desc`).
+     c. *Mesin Database untuk Agregasi*: Hitung metrik dan analitik di level SQL/RPC (`count(*) filter (...)`), jangan pernah menarik ribuan baris mentah untuk di-loop di memori Node.js/Python.
+   - **Prinsip Migrasi (`database-migrations`)**:
+     a. *Every Change is a Migration*: Seluruh perubahan skema wajib dicatat via berkas migrasi baru menggunakan CLI (`npx --prefix web supabase migration new <nama>`).
+     b. *Zero-Downtime & Non-Destructive*: Gunakan `IF NOT EXISTS`, jangan pernah menambah `NOT NULL` tanpa `DEFAULT` pada tabel berisi data, dan dilarang keras menjalankan `DROP TABLE` / `DROP COLUMN` sembarangan.
+     c. *Pemisahan DDL & DML*: Pisahkan pembuatan struktur tabel (DDL) dan pembaruan/backfill data (DML).
+     d. *Verifikasi Pra-Push & User-Only*: Agen wajib memverifikasi ulang seluruh sintaks SQL sebelum meminta user menjalankan `npx supabase db push`.
 
 ### Langkah 2: Dekomposisi & Inisialisasi To-Do List
 1. **Dekomposisi Low-Level Objektif**:
@@ -337,3 +348,24 @@ Sebelum menulis rencana atau menyentuh kode, identifikasi domain pekerjaan dan b
    - Buat ID penomoran terpisah (`w:numId`) untuk setiap kelompok sub-bab agar nomor selalu mulai dari 1 secara deterministik.
 2. **Bolding Istilah Kunci**:
    - Setiap poin istilah klinis/teknis utama wajib ditebalkan di awal kalimat run (contoh: `**Zero Medical Hallucination**: penjelasan...`).
+
+---
+
+## 14. Batasan Keamanan & Eksekusi Eksternal (Strict Safety Boundaries)
+
+1. **Larangan `git push`**:
+   - Agen **DILARANG KERAS** menjalankan `git push` atau mem-push kode ke remote repositori git dalam situasi apa pun.
+   - Semua commit git bersifat lokal. Operasi push ke remote hanya boleh dijalankan secara manual oleh pengguna.
+2. **Prosedur Pembuatan & Eksekusi Migrasi Basis Data Supabase**:
+   - **Pembuatan File Migrasi oleh Agen**:
+     - Setiap kali ada kebutuhan perubahan skema basis data, agen **WAJIB** membuat berkas migrasi baru menggunakan Supabase CLI:
+       `npx --prefix web supabase migration new <nama_migrasi>`
+       (atau format timestamp standar pada folder `web/supabase/migrations/`).
+     - Seluruh query SQL wajib menerapkan prinsip non-destruktif (`IF NOT EXISTS`, aman terhadap data yang sedang berjalan).
+   - **Audit Wajib Sebelum Meminta User Push**:
+     - Sebelum meminta pengguna menjalankan push, agen **WAJIB memverifikasi ulang seluruh sintaks SQL yang terbentuk**.
+     - Pastikan tidak ada query aneh, tidak ada potensi kehilangan data penting (`DROP TABLE`, `DROP COLUMN`, `TRUNCATE`, dll.), dan struktur backward-compatible.
+     - Agen wajib memaparkan rincian dan jaminan keamanan SQL tersebut kepada pengguna.
+   - **Larangan Eksekusi `db push` oleh Agen**:
+     - Agen **DILARANG KERAS** mengeksekusi `npx supabase db push`, `npx supabase db reset`, atau mengeksekusi migrasi langsung ke basis data remote.
+     - Perintah `npx supabase db push` **HANYA BOLEH DIJALANKAN SECARA MANUAL OLEH PENGGUNA (USER ONLY)**.

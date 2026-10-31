@@ -65,7 +65,23 @@ function terapkanFilter<Q extends { gte: any; lt: any; eq: any }>(q: Q, f: Filte
   return q;
 }
 
-export async function ambilAnalitik(db: SupabaseClient, f: Filter) {
+export async function ambilAnalitik(db: SupabaseClient, f: Filter): Promise<{ metrics: Metrics; chart_series: TitikGrafik[] }> {
+  // 1. Prioritaskan agregasi native di PostgreSQL via Supabase RPC (jauh lebih hemat memori & cepat).
+  try {
+    const { data: rpcData, error: rpcError } = await db.rpc("hitung_analitik_dashboard", {
+      p_mulai: `${f.mulai}T00:00:00${WIB}`,
+      p_selesai: batasAkhir(f.selesai),
+      p_puskesmas: f.puskesmas_id ?? null,
+      p_kelurahan: f.kelurahan_id ?? null,
+    });
+    if (!rpcError && rpcData?.metrics) {
+      return rpcData as { metrics: Metrics; chart_series: TitikGrafik[] };
+    }
+  } catch {
+    // Fallback otomatis bila migrasi RPC belum di-push pada instance Supabase lokal/uji
+  }
+
+  // 2. Fallback in-memory untuk kompatibilitas lingkungan yang belum menjalankan migrasi
   const { data, error } = await terapkanFilter(
     db.from("tr_discharge").select("waktu_krs, status_kunjungan, status_kesehatan"),
     f,

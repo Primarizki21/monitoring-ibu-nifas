@@ -1,17 +1,14 @@
 import { Header } from "@/components/header";
 import { wajibLogin, type Profil } from "@/lib/auth";
 import { ambilAlertAktif, ambilAnalitik, ambilDaftarPasien, filterBawaan, KATEGORI, type Filter, type Kategori } from "@/lib/data/dashboard";
+import { ambilMasterFaskes, type MasterFaskes } from "@/lib/data/master";
 import { createClient } from "@/lib/supabase/server";
 import { TampilanDashboard } from "./tampilan";
 
 const TANGGAL = /^\d{4}-\d{2}-\d{2}$/;
 const UUID = /^[0-9a-f-]{36}$/;
 
-type Master = {
-  puskesmas: { id: string; nama_puskesmas: string }[];
-  kelurahan: { id: string; nama_kelurahan: string; puskesmas_id: string }[];
-  rs: { id: string; nama_rs: string }[];
-};
+type Master = MasterFaskes;
 
 // Nama wilayah yang dicakup data pengguna, diambil dari tabel master yang sudah dimuat.
 function namaCakupan(p: Profil, m: Master) {
@@ -34,17 +31,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const kategori = tab === "data" && q.kategori && q.kategori in KATEGORI ? (q.kategori as Kategori) : undefined;
 
   const db = await createClient();
-  // Satu round-trip paralel ke Supabase (Singapura ~0,4 dtk): RLS sudah membatasi data, peran hanya untuk tampilan.
-  const [profil, { metrics, chart_series }, pasien, alerts, pkm, kel, rs] = await Promise.all([
+  // Pengambilan data analitik dan 100 pasien terbaru dibatasi RLS; data master RS & wilayah di-cache server-side.
+  const [profil, { metrics, chart_series }, pasien, alerts, master] = await Promise.all([
     wajibLogin(),
     ambilAnalitik(db, filter),
-    ambilDaftarPasien(db, filter, tab === "data" ? 500 : 6, kategori),
+    ambilDaftarPasien(db, filter, 100),
     ambilAlertAktif(db),
-    db.from("m_puskesmas").select("id, nama_puskesmas").order("nama_puskesmas"),
-    db.from("m_kelurahan").select("id, nama_kelurahan, puskesmas_id").order("nama_kelurahan"),
-    db.from("m_rumah_sakit").select("id, nama_rs"),
+    ambilMasterFaskes(),
   ]);
-  const master: Master = { puskesmas: pkm.data ?? [], kelurahan: kel.data ?? [], rs: rs.data ?? [] };
   const bisaPilihPuskesmas = profil.role === "SUPERADMIN_DINKES" || profil.role === "BIDAN_RS";
   const kelurahan =
     profil.role === "BIDAN_KELURAHAN" ? null : master.kelurahan.filter((k) => profil.role !== "KEPALA_PUSKESMAS" || k.puskesmas_id === profil.puskesmas_id);

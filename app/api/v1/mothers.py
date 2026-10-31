@@ -81,20 +81,20 @@ def list_mothers(
     faskes_id: int | None = Depends(get_current_faskes_id),
 ):
     """Daftar ibu nifas. Jika diakses Admin Faskes, otomatis terisolasi pada faskes masing-masing."""
-    statement = select(Mother)
+    statement = (
+        select(Mother, EmergencyContact)
+        .outerjoin(EmergencyContact, EmergencyContact.mother_id == Mother.id)
+    )
     if faskes_id is not None:
         statement = statement.where(Mother.faskes_id == faskes_id)
     if status is not None:
         statement = statement.where(Mother.status_pemantauan == status)
 
     statement = statement.order_by(Mother.created_at.desc())
-    mothers = session.exec(statement).all()
+    rows = session.exec(statement).all()
 
     results = []
-    for m in mothers:
-        em = session.exec(
-            select(EmergencyContact).where(EmergencyContact.mother_id == m.id)
-        ).first()
+    for m, em in rows:
         contact_base = None
         if em:
             contact_base = EmergencyContactBase(
