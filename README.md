@@ -1,397 +1,359 @@
-# Sistem Monitoring Kesehatan Ibu Nifas Surabaya (v2.0)
+# SIM-NIFAS Surabaya: Sistem Monitoring Discharge Planning & Kesehatan Ibu Nifas
 
-Sistem pemantauan kesehatan ibu nifas terautomasi berbasis **WhatsApp Cloud API** dan **Progressive Web App (PWA)** untuk kegiatan Pengabdian Masyarakat (Pengmas) di Kota Surabaya.
+Sistem informasi dan pemantauan kesehatan ibu nifas terautomasi berbasis **Progressive Web App (PWA)** dan **WhatsApp Gateway** untuk kegiatan Pengabdian Masyarakat (Pengmas) di Kota Surabaya.
 
-Sistem menghubungkan **3 Rumah Sakit Rujukan** (RSUD Dr. Soetomo, RSUD dr. Mohamad Soewandhie, RSUD Bhakti Dharma Husada) dan **10 Puskesmas Mitra** di Surabaya untuk mengawal ibu pascasalin selama **42 hari nifas penuh (KF1 s/d KF4)**.
+Sistem menghubungkan **Rumah Sakit Rujukan** dan **Puskesmas Mitra / Bidan Kelurahan** di Surabaya untuk mengawal kepulangan pasien (*discharge planning*), menegakkan standar kunjungan rumah maksimal $2 \times 24\text{ jam}$ ($48\text{ jam}$), mendeteksi dini tanda bahaya maternal, serta mendampingi masa nifas hingga genap **42 hari (KF1 s/d KF4)**.
 
 ---
 
-## 1. Dokumen Resmi Proyek (Versi 2.0)
+## 1. Dokumen Resmi Proyek
 
-- **Google Docs (Project Charter & Spesifikasi Teknis v2)**:  
+- **Google Docs (Project Charter & Spesifikasi Teknis)**:  
   [Buka Google Docs](https://docs.google.com/document/d/1MGuyIH8bSQ3jBsk8kKsxSAsildZA11Rwhq3HyZ4dfA4/edit?usp=drivesdk)  
-  *Memuat latar belakang klinis, analogi sistem, alur 5 tahap operasional, protokol Buku KIA Kemenkes, dan roadmap 3 bulan.*
+  *Latar belakang klinis, alur 5 tahap operasional, protokol Buku KIA Kemenkes, dan roadmap implementasi.*
 
-- **Google Spreadsheet (RAB & Matriks Klinis v2)**:  
+- **Google Spreadsheet (RAB & Matriks Klinis)**:  
   [Buka Google Spreadsheet](https://docs.google.com/spreadsheets/d/1J38nXV5J0ri4aM3_s0h6bYo-dELT1FO5RBnxITIlUtc/edit?usp=sharing)  
-  *Memuat rincian anggaran biaya pilot (Rp6,3 jt server-only vs Rp13,3 jt field-ready komprehensif) serta kamus lengkap pesan interaktif KF1–KF4 (Tab resmi: `RAB Revisi (3 Bulan)`).*
+  *Rincian anggaran biaya pilot lapangan dan kamus lengkap pesan interaktif KF1–KF4 (Tab resmi: `RAB Revisi (3 Bulan)`).*
+
+- **Product Requirement Document (PRD Web Platform)**:  
+  Lihat [`docs/PRD_SIM_NIFAS_SURABAYA.md`](docs/PRD_SIM_NIFAS_SURABAYA.md) untuk spesifikasi modul pemulangan KRS, kunjungan rumah 48 jam bertoken, 10 KPI kesehatan kota, dan kontrak API web.
 
 - **Dokumen Project Charter Formal (DOCX Lokal)**:  
   `docs/PROJECT_CHARTER_MONITORING_NIFAS.docx`  
-  *Dokumen Word terstandarisasi dengan caption tabel formal dan flowchart beresolusi tinggi, dibuat via `uv run python tools/report_docs/main.py`.*
+  *Dokumen Word resmi terstandarisasi dengan caption tabel formal dan flowchart beresolusi tinggi (dibuat via `make docs`).*
 
-- **Diagram Alir ISO/ANSI & Generator Matplotlib**:  
-  Lihat [`FLOWCHART.md`](FLOWCHART.md) untuk bagan alir Mermaid orthogonal. Seluruh diagram formal resolusi tinggi (300 DPI) digenerate secara native via Python Matplotlib (`tools/report_docs/render_charts.py`), dengan berkas sumber arsip di `docs/*.drawio`.
-- **Pedoman Aturan Kerja & Standar Teknis**:  
-  Lihat [`AGENTS.md`](AGENTS.md) untuk dokumentasi lengkap variabel, matriks klinis, dan aturan commit repositori.
-
-
-## 2. Prinsip Rekayasa Sistem (Core Principles)
-
-1. **Strictly NO LLM (Zero Medical Hallucination)**:  
-   Semua penilaian triase dilakukan secara **deterministik berbasis aturan Buku KIA Kemenkes RI**. Tidak ada model bahasa generatif (AI) di alur triase klinis untuk menjamin kepatuhan hukum medis dan kepastian diagnosis banding.
-2. **Model Komunikasi Hybrid Dua Sisi**:  
-   - **Sisi Bot Pusat**: Menangani pengiriman pesan pengingat terjadwal dan menampung jawaban angka/tombol terstruktur dari ibu nifas.
-   - **Sisi Bidan Faskes**: Menerima peringatan (*alert*) di dashboard PWA dan menghubungi ibu via tautan 1-klik `wa.me` dengan sapaan otomatis (*pre-filled text*).
-3. **Primary & Emergency Fail-Safe Contact**:  
-   - **Nomor Utama (Ibu)**: Menerima seluruh kuesioner skrining langsung karena ibu adalah pihak yang merasakan kondisi fisiknya.
-   - **Kontak Darurat (Suami/Keluarga)**: Didaftarkan sebagai jalur evakuasi jika ibu mengalami tanda bahaya kritis (🔴 Merah) atau tidak merespons pengingat dalam 24 jam.
-4. **Siklus Hidup Penuh 42 Hari**:  
-   Penanganan suatu insiden keluhan pada KF1 atau KF2 tidak menghentikan jadwal sistem. Sistem tetap aktif mengawal ibu hingga genap hari ke-42 (KF4) dan dinyatakan lulus pemantauan.
-5. **Isolasi Data Multi-Tenant (Tenant Scoping)**:  
-   Bidan di suatu faskes hanya dapat melihat data pasien binaan wilayahnya. Dinas Kesehatan memiliki akses agregat seluruh kota.
-6. **Murni Standalone**:  
-   Tidak memiliki dependensi runtime ke SIMPUS atau SatuSehat pada fase pilot, memastikan keandalan 100% dan kecepatan deploy.
+- **Diagram Alir ISO/ANSI & Visualisasi Sistem**:  
+  Lihat [`FLOWCHART.md`](FLOWCHART.md) untuk bagan alir Mermaid orthogonal. Seluruh diagram formal resolusi tinggi (300 DPI) digenerate secara native via Python Matplotlib (`make charts`), dengan berkas sumber arsip di `docs/*.drawio`.
 
 ---
 
-## 3. Arsitektur Aliran Data (Low-Level Architecture)
+## 2. Prinsip Rekayasa Sistem (Core Principles)
+
+1. **Discharge Planning Continuity (Zero Delay Reporting)**:  
+   Menghubungkan rumah sakit pemulih dengan fasilitas pelayanan primer secara instan. Begitu pasien keluar rumah sakit (KRS), penugasan otomatis terdistribusi ke Bidan Kelurahan dalam $< 1\text{ menit}$.
+2. **Penegakan SLA Kunjungan Rumah 48 Jam ($2 \times 24\text{ Jam}$)**:  
+   Menjamin setiap ibu nifas yang dipulangkan mendapatkan kunjungan rumah oleh Bidan Kelurahan $\le 48\text{ jam}$. Sistem mengotomatisasi hitung mundur SLA, pengingat 24 jam, dan eskalasi keterlambatan ke Kepala Puskesmas.
+3. **Deteksi Tanda Bahaya & Realtime Red Alert**:  
+   Triase otomatis langsung mengevaluasi hasil pemeriksaan fisik. Jika terdeteksi kondisi darurat maternal, sistem membunyikan alarm visual di dashboard pimpinan dan memicu pesan WhatsApp darurat ke nakes dalam waktu $< 15\text{ menit}$.
+4. **Strictly NO LLM (Zero Medical Hallucination)**:  
+   Seluruh penilaian triase dan pengelompokan risiko klinis dieksekusi secara **deterministik berbasis Buku KIA Kemenkes RI**. Tidak ada model bahasa generatif (AI) di alur triase klinis untuk menjamin kepatuhan medis dan keabsahan diagnosis.
+5. **Pelaporan Ringan Bertoken Kriptografis (Tokenized Direct Link)**:  
+   Bidan Kelurahan melaporkan hasil kunjungan fisik di lapangan melalui tautan token acak 64-karakter yang aman tanpa hambatan autentikasi login yang rumit di lapangan.
+6. **Isolasi Data Multi-Tenant (Supabase Row Level Security)**:  
+   Isolasi hak akses data ditegakkan di level basis data. Bidan RS hanya mengakses pasien faskesnya; Bidan Kelurahan hanya mengakses wilayah kelurahannya; Kepala Puskesmas mengawasi wilayah puskesmasnya; Dinas Kesehatan memantau agregat seluruh kota.
+7. **Siklus Pemantauan Lengkap 42 Hari**:  
+   Kunjungan rumah 48 jam berpadu dengan pemantauan berkala KF1–KF4 hingga hari ke-42 pascasalin untuk memastikan pemulihan organ reproduksi dan pencegahan komplikasi lanjutan.
+
+---
+
+## 3. Arsitektur Aliran Data (System Architecture)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Ibu as Ibu Nifas (WhatsApp)
-    participant Meta as Meta WhatsApp Cloud API
-    participant API as FastAPI Backend (Engine)
-    participant DB as PostgreSQL 16
-    actor Bidan as Bidan Faskes (PWA Dashboard)
+    actor BidanRS as Bidan RS
+    participant Web as Web App (Next.js 15)
+    participant DB as Supabase (PostgreSQL 16)
+    participant WA as WhatsApp Gateway (Fonnte / Meta)
+    actor BidanKel as Bidan Kelurahan
+    actor Ibu as Ibu Nifas
+    actor Kapus as Kepala Puskesmas / Dinkes
 
-    Note over API,DB: Pukul 08.00 WIB - Scheduler Harian Memindai Jadwal
-    API->>DB: Query screening_schedules (target_date = today & status = SCHEDULED)
-    API->>Meta: Kirim Pesan Skrining KF (Rate Limit: 10 msg/sec)
-    Meta->>Ibu: Pesan WhatsApp Masuk ("Pilih kondisi 1, 2, atau 3")
-    
-    Ibu->>Meta: Balas Pilihan ("2" / "ada keluhan")
-    Meta->>API: Inbound Webhook POST (/api/v1/webhook)
-    
-    API->>API: Regex Normalizer (Ekstraksi angka & kata kunci)
-    API->>API: Deterministic Triage Evaluation (Buku KIA)
-    API->>DB: Simpan ke screening_logs & update schedule = REPLIED
-    
-    alt Status Hijau (Normal)
-        API->>Meta: Kirim Edukasi Nutrisi & Pemulihan
-        Meta->>Ibu: Pesan Konfirmasi Aman
-    else Status Kuning / Merah (Keluhan / Bahaya)
-        API->>Meta: Kirim Instruksi Bahaya & Kontak Bidan PJ
-        Meta->>Ibu: Pesan Siaga + Tautan wa.me Bidan
-        API->>DB: Terbitkan Tiket Antrean Triase
-        DB->>Bidan: Alert Kuning/Merah di Dashboard PWA
-        Bidan->>Ibu: Klik [Hubungi Ibu] -> Direct wa.me dengan teks otomatis
+    Note over BidanRS,Web: Tahap 1: Pemulangan Pasien (KRS)
+    BidanRS->>Web: Input Form KRS (/krs) & Submit
+    Web->>DB: Insert tr_discharge (Hitung SLA = KRS + 48 Jam & Buat Token 64-Hex)
+    DB-->>Web: Trigger antrean pesan ke log_notifikasi_wa
+
+    par Distribusi Penugasan & Edukasi
+        Web->>WA: Kirim Notifikasi Penugasan (Bidan Kelurahan & Kapus)
+        WA->>BidanKel: Pesan Penugasan + Tautan Kunjungan Bertoken (/visit/[token])
+        WA->>Kapus: Tembusan Pemantauan Wilayah
+    and
+        Web->>WA: Kirim Pesan Edukasi & Jadwal Kontrol
+        WA->>Ibu: Pesan Sapaan, Jadwal Kontrol, & 5 Tanda Bahaya Nifas
     end
+
+    Note over BidanKel,DB: Tahap 2: Kunjungan Rumah 48 Jam & Triase
+    BidanKel->>Web: Buka Tautan Bertoken (/visit/[token]) & Isi Laporan Fisik
+    Web->>DB: Submit tr_home_visit (Hitung Durasi Sejak KRS & Evaluasi Triase)
+    
+    alt Terdeteksi Tanda Bahaya Maternal
+        DB->>DB: Kunci Status = TANDA_BAHAYA & Terbitkan tr_emergency_alert
+        DB-->>Web: Broadcast Supabase Realtime Event
+        Web-->>Kapus: Muncul Banner Red Alert Menyala di Dashboard
+        Web->>WA: Kirim Pesan Darurat Prioritas Tinggi
+        WA->>BidanKel: Pesan Siaga Bahaya Nifas: Segera Tindak Lanjut / Rujuk
+    else Kondisi Sehat / Normal
+        DB->>DB: Kunci Status = SEHAT & VISITED_ON_TIME
+    end
+
+    Note over DB,Kapus: Tahap 3: Pemantauan SLA & Analitik Dashboard
+    loop Background Cron Job (Tiap Menit)
+        Web->>DB: Pindai Pasien Lewat 24 Jam (Reminder) & 48 Jam (Eskalasi Terlambat)
+    end
+    Kapus->>Web: Buka /dashboard (10 Indikator Kinerja & Analitik Kota)
 ```
 
 ---
 
 ## 4. Struktur Direktori Proyek
 
+Struktur proyek diatur secara modular dan terpisah berdasarkan tanggung jawab platform:
+
 ```
 pengmas-rs-surabaya/
-├── app/
-│   ├── api/
-│   │   ├── deps.py               # Dependency header tenant X-Faskes-ID & X-User-Role
-│   │   └── v1/
-│   │       ├── faskes.py         # Endpoint master RS/Puskesmas & metrik agregat
-│   │       ├── mothers.py        # Pendaftaran discharge planning & profil ibu
-│   │       ├── triage.py         # Antrean triase bidan, 1-klik wa.me & intervensi
-│   │       └── webhook.py        # Meta Webhook verification & incoming chat handler
-│   ├── core/
-│   │   └── config.py             # Pydantic Settings (.env configuration)
-│   ├── db/
-│   │   ├── session.py            # Engine SQLModel (PostgreSQL dengan fallback SQLite)
-│   │   └── seed.py               # Seeder 13 Faskes Surabaya & 5 sampel kohort nifas
-│   ├── models/
-│   │   ├── enums.py              # Enum klinis, status pemantauan, dan peran pengguna
-│   │   ├── faskes.py             # Model tabel faskes
-│   │   ├── user.py               # Model tabel users
-│   │   ├── mother.py             # Model tabel mothers & emergency_contacts
-│   │   ├── screening.py          # Model tabel screening_schedules & screening_logs
-│   │   ├── intervention.py       # Model tabel interventions (disposisi nakes)
-│   │   └── audit.py              # Model tabel audit_logs (UU PDP No. 27/2022)
-│   ├── services/
-│   │   ├── triage_engine.py      # Evaluasi triase KIA & regex normalizer input
-│   │   ├── whatsapp_service.py   # Meta Graph API client & generator direct wa.me
-│   │   └── scheduler.py          # APScheduler cron 08.00 WIB & batch rate limiter
-│   └── main.py                   # Inisialisasi FastAPI, lifespan, CORS, dan Swagger UI
-├── docs/                         # Dokumen charter docx, flowchart draw.io & panduan desain
-│   ├── Flowchart_1_manual.drawio # Arsip draw.io alur onboarding & pendaftaran
-│   ├── Flowchart_2.drawio        # Arsip draw.io alur triase deterministik KIA
-│   ├── Flowchart_3.drawio        # Arsip draw.io alur intervensi klinis bidan
-│   ├── Flowchart_4.drawio        # Arsip draw.io integrasi RBAC Dinkes Surabaya
-│   ├── DRAWIO_STYLE_GUIDE.md     # Panduan standarisasi visual dan palet warna medis
-│   ├── PROJECT_CHARTER_MONITORING_NIFAS.docx # Dokumen resmi charter nifas
-│   ├── PRD_SIM_NIFAS_SURABAYA.md # PRD discharge planning & kunjungan rumah 2x24 jam (prototipe web)
-│   └── assets/                   # Render gambar PNG flowchart (300 DPI) untuk dokumen
-├── tests/
-│   └── smoke_test.py             # 9 pengujian end-to-end terautomasi
-├── web/                          # Prototipe demo PWA: Next.js + Supabase (lihat web/README.md)
-├── tools/report_docs/            # Engine diagram Matplotlib & builder DOCX lokal
-│   ├── chart_engine.py           # Engine perutean ortogonal & shapes Matplotlib
-│   ├── flowchart_definitions.py  # Definisi 4 alur diagram (Onboarding, Triase, Intervensi, Master)
-│   ├── render_charts.py          # Runner render aset gambar PNG (300 DPI)
-│   ├── builder.py                # Modul perakit dokumen DOCX berbasis OpenXML
-│   └── main.py                   # Entrypoint kompilasi Project Charter DOCX
-├── docker-compose.yml            # Layanan PostgreSQL 16 containerized
-├── pyproject.toml                # Dependensi Python terkelola via Astral uv
-├── .env.example                  # Template variabel lingkungan aman
-├── FLOWCHART.md                  # Dokumentasi diagram alir Mermaid ANSI/ISO
-├── Makefile                  # Otomasi perintah: setup, dev, build, seed, test-e2e
-├── main.py                   # Root runner entrypoint praktis (Python)
-├── AGENTS.md                 # Pedoman aturan agen, RAB, & matriks klinis
-└── README.md                 # Dokumentasi arsitektur teknis sistem
+├── web/                 # Aplikasi Web Utama SIM-NIFAS (Next.js 15, Supabase, Tailwind, App Router)
+│   ├── src/app/         # Halaman aplikasi (KRS, Kunjungan Bertoken, Dashboard Nakes) & API Routes
+│   ├── src/components/  # Komponen UI: Red Alert banner, formulir, cincin timer SLA, visualisasi data
+│   ├── src/lib/         # Client Supabase RLS, antrean worker WA, dan query analitik
+│   ├── supabase/        # Skema basis data PostgreSQL, migrasi bertahap, fungsi RLS, dan seed data
+│   ├── scripts/         # Skrip pembuatan akun nakes uji per faskes
+│   └── e2e/             # Pengujian end-to-end terautomasi dengan Playwright
+├── app/                 # Modul Engine Riset & Bot WA KIA (FastAPI, SQLModel, Triage Engine, APScheduler)
+├── docs/                # Dokumen Spesifikasi, PRD SIM-NIFAS, Project Charter, dan Flowchart
+├── tools/report_docs/   # Toolchain generator dokumen formal DOCX & render diagram alir 300 DPI
+├── tests/               # Rangkaian uji otomatis backend Python (smoke test)
+├── Makefile             # Otomasi alur kerja: setup, dev, build, seed-users, test-e2e, docs
+└── docker-compose.yml   # Kontainer basis data lokal pendukung
 ```
 
 ---
 
-## 5. Skema Basis Data & Entitas Utama
+## 5. Skema Basis Data & Fitur Supabase
 
-Sistem menggunakan **SQLModel** (kombinasi SQLAlchemy Core + Pydantic v2):
+Platform operasional web SIM-NIFAS menggunakan **Supabase (PostgreSQL 16)** dengan isolasi keamanan data dan automasi logika di level basis data:
 
-| Tabel | Keterangan Entitas | Relasi Kunci |
+### Entitas Relasional Utama
+| Tabel | Keterangan Entitas | Karakteristik Kunci |
 |---|---|---|
-| `faskes` | Master 13 Faskes (RSUD & Puskesmas di Surabaya) | 1-ke-banyak dengan `mothers` dan `users` |
-| `users` | Akun Bidan Jaga, Admin Faskes, dan Super Admin Dinkes | Terikat pada `faskes_id` |
-| `mothers` | Data ibu nifas, waktu bersalin, metode persalinan, paritas | Induk siklus hidup pemantauan |
-| `emergency_contacts` | Kontak darurat suami/pendamping keluarga | Terikat 1-ke-1 dengan `mother_id` |
-| `screening_schedules` | Linimasa 4 jadwal otomatis (KF1, KF2, KF3, KF4) | Menyimpan status pengiriman & WABA ID |
-| `screening_logs` | Catatan riwayat jawaban pasien, angka opsi, skor warna triase | Terikat dengan `schedule_id` dan `mother_id` |
-| `interventions` | Rekam tindakan klinis bidan (WA, telepon, rujukan, home visit) | Terikat dengan `screening_log_id` dan `user_id` |
-| `audit_logs` | Jejak audit akses data medis untuk kepatuhan hukum UU PDP | Mencatat aksi, IP, user-agent, dan record ID |
+| `m_puskesmas` | Master Puskesmas se-Surabaya | Wilayah kecamatan dan kontak operasional |
+| `m_kelurahan` | Master Kelurahan binaan | Terikat secara hierarkis ke `m_puskesmas` |
+| `m_rumah_sakit` | Master Rumah Sakit rujukan pemulangan | Tipe RS dan alamat fasilitas |
+| `users` | Akun pengguna dan profil tenaga kesehatan | Terikat dengan Supabase Auth, peran, faskes, dan kelurahan |
+| `tr_discharge` | Rekam pemulangan pasien (KRS) | Token 64-hex acak, batas SLA 48 jam, status kunjungan, diagnosis |
+| `tr_home_visit` | Laporan hasil kunjungan rumah Bidan Kelurahan | Suhu tubuh, checklist 5 tanda bahaya, catatan klinis, konfirmasi kontrol |
+| `tr_emergency_alert` | Rekam eskalasi kedaruratan (Red Alert) | Jenis bahaya, penanda status resolusi, waktu penanganan nakes |
+| `log_notifikasi_wa` | Antrean dan jejak audit pengiriman WhatsApp | Template ID, nomor tujuan, status pengiriman (`QUEUED`, `SENT`, `FAILED`) |
+
+### Keunggulan Engine Basis Data Supabase
+1. **Row Level Security (RLS)**: Pembatasan data transaksional otomatis sesuai peran nakes dan wilayah kerja tanpa risiko kebocoran data antar-faskes.
+2. **Database Triggers**: Kalkulasi batas waktu SLA ($T_{\text{deadline}} = T_0 + 48\text{ jam}$), penerbitan token, dan kalkulasi triase tanda bahaya dieksekusi secara instan di level database.
+3. **RPC Function (`get_dashboard_analytics`)**: Seluruh 10 indikator kinerja nifas dihitung langsung oleh mesin PostgreSQL, mengeliminasi masalah performa query N+1 pada dashboard pimpinan.
+4. **Supabase Realtime**: Menyebarkan sinyal peringatan bahaya (*Red Alert*) seketika ke antarmuka web tanpa perlu memuat ulang halaman (*polling*).
+
+*(Catatan: Modul Python/SQLModel di folder `app/` dipertahankan sebagai modul riset pelengkap untuk evaluasi bot KIA interaktif).*
 
 ---
 
 ## 6. Protokol Klinis & Logika Triase Deterministik
 
-### Matriks Pertanyaan & Poin Triase (Buku KIA Kemenkes RI)
+### A. Alur Protokol Pemulangan Pasien (KRS)
+1. **Verifikasi Wilayah Binaan**: Pemetaan domisili pasien secara presisi (Kecamatan -> Kelurahan) sehingga Puskesmas dan Bidan Kelurahan pengampu terkunci secara otomatis.
+2. **Skrining Klinis Pulang**: Dokumentasi diagnosis rawat, kondisi luka jahitan (SC / perineum), terapi obat oral, dan penetapan tanggal kontrol ulang.
+3. **Edukasi Pemulangan Mandiri**: Informasi personal kepada ibu dan keluarga mengenai 5 tanda bahaya yang memerlukan penanganan darurat.
 
-1. **Onboarding (Hari ke-0 / Saat Pulang)**:
-   - Pertanyaan: Sapaan resmi dan konfirmasi keikutsertaan.
-   - Pilihan: Balas `YA` $\rightarrow$ Status bertransisi dari `ONBOARDING_PENDING` menjadi `AKTIF`.
-2. **KF1 (Hari ke-1 s/d ke-2)**:
-   - Opsi 1: Aman, perdarahan wajar $\rightarrow$ 🟢 **HIJAU**
-   - Opsi 2: Pusing berat, pandangan kabur, nyeri perut hebat, darah deras $\rightarrow$ 🔴 **MERAH** (Risiko perdarahan primer, atonia uteri, preeklampsia postpartum).
-3. **KF2 (Hari ke-3 s/d ke-7)**:
-   - Opsi 1: Aman, lochea merah kecokelatan tanpa bau busuk, ASI lancar $\rightarrow$ 🟢 **HIJAU**
-   - Opsi 2: Payudara bengkak/nyeri, puting lecet $\rightarrow$ 🟡 **KUNING** (Bendungan ASI / mastitis dini).
-   - Opsi 3: Demam menggigil (>38°C), lochea berbau busuk $\rightarrow$ 🔴 **MERAH** (Infeksi nifas / sepsis puerperalis).
-4. **KF3 (Hari ke-8 s/d ke-28)**:
-   - Opsi 1: Luka membaik/kering, lochea berkurang $\rightarrow$ 🟢 **HIJAU**
-   - Opsi 2: Bekas jahitan nyeri/terbuka/bernanah, kaki bengkak berat, tensi naik $\rightarrow$ 🔴 **MERAH** (Infeksi luka jahitan SC/perineum, DVT).
-5. **KF4 (Hari ke-29 s/d ke-42)**:
-   - Opsi 1: Sehat fisik dan psikologis, sudah ada rencana KB $\rightarrow$ 🟢 **HIJAU**
-   - Opsi 2: Cemas berlebih, sedih berkepanjangan, sulit tidur $\rightarrow$ 🟡 **KUNING** (Skrining awal depresi postpartum / EPDS).
-   - Opsi 3: Belum memahami pilihan KB pascasalin $\rightarrow$ 🟡 **KUNING** (Konseling kontrasepsi).
+### B. Protokol Kunjungan Rumah 48 Jam & 5 Tanda Bahaya Nifas Kemenkes RI
+Bidan Kelurahan melakukan pemeriksaan fisik langsung di rumah ibu nifas dalam rentang waktu $\le 48\text{ jam}$ pascasalin dengan memeriksa parameter klinis:
+1. **Demam Tinggi**: Suhu tubuh $> 38{,}0^\circ\text{C}$ (risiko infeksi nifas / sepsis puerperalis).
+2. **Perdarahan Abnormal**: Darah mengalir deras atau bergumpal dari jalan lahir.
+3. **Nyeri Perut Hebat**: Nyeri tekan akut pada abdomen bawah atau involusi rahim terganggu.
+4. **Infeksi Luka Jahitan**: Bekas luka SC atau perineum terbuka, bengkak merah, berbau busuk, atau mengeluarkan nanah.
+5. **Gejala Sistemik Berat**: Pusing berputar hebat, pandangan kabur, muntah terus-menerus, atau lemas ekstrem.
 
-### Normalisasi Variasi Input Pasien
-Pasien di lapangan tidak selalu mengetik angka tunggal. Fungsi `normalize_reply()` menangani variasi input melalui regex deterministik:
-- Digit terisolasi: `"1"`, `"1."`, `"pilihan 2"`, `"no 3"`.
-- Ejaan kata: `"satu"`, `"dua"`, `"tiga"`.
-- Kata afirmasi: `"ya"`, `"iya"`, `"setuju"`, `"siap"`, `"nggih"`, `"monggo"`.
-- Kata kunci keluhan: `"darah"`, `"pusing"`, `"nyeri"`, `"demam"`.
-- Jika masukan berupa stiker/pesan tidak terbaca, bot mengirim balasan santun meminta input angka dan menyertakan kontak Bidan PJ.
+### C. Klasifikasi Triase Deterministik
+- 🟢 **SEHAT**: Suhu tubuh $\le 38{,}0^\circ\text{C}$, seluruh checklist bahaya negatif, dan ibu dalam kondisi pemulihan wajar.
+- 🟡 **KOMPLIKASI**: Keluhan ringan/lokal non-fatal (puting lecet, payudara bengkak/bendungan ASI, nyeri luka jahitan ringan). Bidan memberikan asuhan mandiri dan pemantauan berkala.
+- 🔴 **TANDA BAHAYA (Red Alert)**: Memenuhi salah satu atau lebih tanda bahaya maternal. Sistem menerbitkan tiket darurat dan membunyikan alarm dashboard untuk respon cepat $< 15\text{ menit}$.
 
 ---
 
-## 7. Model Keamanan & Isolasi Data (Multi-Tenant)
+## 7. Model Keamanan & Kepatuhan Privasi Data
 
-Untuk memenuhi prinsip kerahasiaan rekam medis, sistem menerapkan isolasi tenant melalui header HTTP:
-
-- **Bidan Faskes (Tenant-Scoped)**:  
-  Setiap permintaan dari PWA menyertakan header `X-Faskes-ID: <id_faskes>`. Backend secara otomatis memfilter seluruh kuari database (daftar ibu, antrean triase, riwayat tindakan) hanya untuk faskes tersebut.
-- **Super Admin (Dinas Kesehatan)**:  
-  Jika header `X-Faskes-ID` tidak disertakan (atau role pengguna adalah `SUPER_ADMIN_DINKES`), backend menyajikan data komprehensif seluruh 13 faskes di Surabaya untuk keperluan analitik epidemiologi kota.
-- **Jejak Audit Medis (UU PDP No. 27/2022)**:  
-  Setiap penambahan atau pembaruan rekam tindakan klinis secara otomatis dicatat ke tabel `audit_logs` bersama identitas pengguna, alamat IP, dan *user-agent*.
+1. **Autentikasi & Autorisasi Bertingkat (RBAC & RLS)**:
+   - **Bidan RS**: Memiliki hak tulis (*insert*) data pemulangan pasien (KRS) pada rumah sakit tempatnya bertugas.
+   - **Bidan Kelurahan**: Memiliki hak akses terhadap data pemulangan dan laporan kunjungan khusus pada wilayah kelurahan binaannya.
+   - **Kepala Puskesmas**: Memiliki hak supervisi manajerial dan eskalasi Red Alert untuk seluruh kelurahan di wilayah kerja puskesmasnya.
+   - **Dinas Kesehatan (Superadmin)**: Akses analitik agregat terhadap seluruh data fasilitas kesehatan di Kota Surabaya.
+2. **Akses Kunjungan Bertoken Kriptografis**:
+   - Tautan kunjungan rumah menggunakan string acak 64-karakter heksadesimal dengan validitas maksimal 7 hari dan hanya dapat digunakan untuk submit final satu kali (*single-use token*).
+3. **Proteksi Background Task & Endpoint Cron**:
+   - Endpoint `/api/cron` dilindungi menggunakan verifikasi header `Authorization: Bearer <CRON_SECRET>`.
+4. **Kepatuhan Privasi Data Medis (UU PDP No. 27/2022)**:
+   - Seluruh transmisi jaringan menggunakan enkripsi TLS 1.3 (HTTPS).
+   - Data tersimpan terlindungi dengan enkripsi database at-rest.
+   - Setiap aktivitas pengiriman pesan WhatsApp tercatat dalam tabel audit `log_notifikasi_wa`.
 
 ---
 
-## 8. Panduan Menjalankan Prototipe Web SIM-NIFAS (Next.js & Supabase)
+## 8. Panduan Menjalankan Aplikasi Web SIM-NIFAS (Next.js & Supabase)
 
-Prototipe web SIM-NIFAS di direktori `web/` mengimplementasikan seluruh alur pemulangan pasien (KRS), kunjungan rumah 2×24 jam bertoken, Red Alert real-time, dan dashboard 10 KPI Surabaya. Seluruh alur kerja telah diotomatisasi melalui **`Makefile`** di root repositori.
+Seluruh alur kerja telah diotomatisasi melalui **`Makefile`** di root repositori.
 
-### Alur Menjalankan Aplikasi dari Awal (Clone Bersih)
-
-#### Langkah 1: Setup Awal & Dependensi
-Jalankan perintah ini di root direktori untuk menginisialisasi lingkungan dan memasang seluruh dependensi:
+### Langkah 1: Setup Awal & Dependensi
 ```bash
 make setup
 ```
-> Perintah di atas otomatis menyalin template `web/.env.example` menjadi `web/.env.local` (jika belum ada) dan menjalankan `npm install` di subdirektori `web/`.
+> Perintah ini menyalin template `web/.env.example` menjadi `web/.env.local` dan mengunduh dependensi npm.
 
-#### Langkah 2: Konfigurasi Kredensial Supabase
-Buka berkas `web/.env.local` dan masukkan kunci dari proyek Supabase Anda (dapat menggunakan [Supabase Cloud](https://supabase.com) gratis):
+### Langkah 2: Konfigurasi Kredensial Supabase
+Buka file `web/.env.local` dan isi kredensial proyek Supabase Anda:
 ```env
-# Supabase API (Settings > API pada Dashboard Supabase)
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJh...
 SUPABASE_SERVICE_ROLE_KEY=eyJh...
 
-# Opsional: Token Fonnte (fonnte.com). Bila kosong, pesan WA tetap tersimpan di antrean database tanpa error.
+# Opsional: Token WhatsApp Gateway (Fonnte)
 FONNTE_TOKEN=
 
-# URL publik aplikasi & kredensial akun uji
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 CRON_SECRET=sim_nifas_cron_secret_2026
 AKUN_UJI_PASSWORD=Uji-VPB-hlJC
 ```
 
-#### Langkah 3: Setup Skema Basis Data di Supabase
-Jalankan file SQL berikut secara berurutan pada **SQL Editor** di Dashboard Supabase (atau via CLI `npx supabase db push`):
-1. `web/supabase/migrations/20261029000000_skema_awal.sql` (Tabel faskes, users, discharge, kunjungan, alert, trigger SLA 48 jam & triase otomatis).
-2. `web/supabase/migrations/20261030000000_antrean_wa.sql` (Tabel antrean `log_notifikasi_wa` & trigger otomatis pesan penugasan).
-3. `web/supabase/migrations/20261030010000_perbaikan_advisor.sql` (Optimasi indeks performa & kebijakan RLS).
-4. `web/supabase/seed.sql` (Master data 15 RS, 15 Puskesmas, dan 34 Kelurahan di 6 kecamatan Surabaya).
+### Langkah 3: Setup Skema Basis Data di Supabase
+Terapkan berkas migrasi database pada folder `web/supabase/migrations/` dan data awal `web/supabase/seed.sql` ke database Supabase Anda:
+- **Cara 1 (Supabase CLI - Direkomendasikan)**:
+  ```bash
+  npx --prefix web supabase db push --include-seed
+  ```
+- **Cara 2 (SQL Editor Manual)**: Jalankan berkas SQL di dalam `web/supabase/migrations/` secara berurutan sesuai urutan nama file, lalu akhiri dengan `web/supabase/seed.sql`.
 
-#### Langkah 4: Membuat Akun Pengguna Uji
-Setelah database siap dan kredensial di `web/.env.local` terisi, buat 4 akun nakes percontohan:
+### Langkah 4: Membuat Akun Tenaga Kesehatan Uji
 ```bash
 make seed-users
 ```
-> Skrip ini mendaftarkan akun di Supabase Auth dan menautkan profil nakes ke faskes terkait.
+> Skrip ini otomatis mendaftarkan 4 akun nakes percontohan ke Supabase Auth.
 
-#### Langkah 5: Menjalankan Aplikasi Web
-Pilih mode yang diinginkan:
-
-* **Mode Pengembangan (Development)** — untuk ngoding & pengembangan:
+### Langkah 5: Menjalankan Aplikasi
+- **Mode Pengembangan (Development)**:
   ```bash
   make dev
   ```
-  Buka browser di **`http://localhost:3000`**. Perubahan kode akan otomatis ter-update (*hot-reload*).
-
-* **Mode Produksi (Production)** — sangat direkomendasikan untuk **presentasi demo**:
+  Buka browser di **`http://localhost:3000`**.
+- **Mode Produksi (Production / Demo)**:
   ```bash
   make build
   make start
   ```
-  Kompilasi build statis & server production yang cepat tanpa latensi kompilasi awal.
 
 ---
 
-### Informasi Akun Uji Login (`/login`)
-Semua akun menggunakan kata sandi bawaan yang dikonfigurasikan di `web/.env.local` (`AKUN_UJI_PASSWORD`): **`Uji-VPB-hlJC`**  
-*(Daftar akun di bawah dikelola oleh skrip `web/scripts/buat-akun-uji.mjs`)*
+### Informasi Akun Login Uji (`/login`)
+Semua akun menggunakan kata sandi bawaan yang dikonfigurasikan pada `AKUN_UJI_PASSWORD`:
 
-| Peran Pengguna | Email Login | Hak Akses & Alur |
+| Peran Pengguna | Email Login | Hak Akses Utama |
 |---|---|---|
-| **Bidan RS** | `bidan.rs@uji.test` | Mengisi form pemulangan pasien (`/krs`) & memantau ibu pulang dari RS terkait. |
-| **Bidan Kelurahan** | `bidan.gundih@uji.test` | Menerima penugasan home visit 48 jam, form kunjungan bertoken (`/visit/[token]`), dashboard wilayah kelurahan. |
-| **Kepala Puskesmas** | `kapus.gundih@uji.test` | Supervisi wilayah puskesmas, pemantauan batas SLA, eskalasi Red Alert. |
-| **Admin Dinkes** | `dinkes@uji.test` | Dashboard agregat 10 KPI seluruh kota Surabaya, filter kecamatan & Puskesmas. |
+| **Bidan RS** | `bidan.rs@uji.test` | Form pemulangan pasien (`/krs`) & riwayat KRS RS terkait |
+| **Bidan Kelurahan** | `bidan.gundih@uji.test` | Penugasan kunjungan 48 jam, form laporan bertoken (`/visit/[token]`) |
+| **Kepala Puskesmas** | `kapus.gundih@uji.test` | Supervisi wilayah puskesmas, batas SLA, eskalasi Red Alert |
+| **Admin Dinkes** | `dinkes@uji.test` | Dashboard agregat 10 KPI Kota Surabaya, filter kecamatan & puskesmas |
 
 ---
 
-### Daftar Lengkap Perintah `Makefile`
+### Daftar Perintah Otomasi `Makefile`
 
 | Perintah | Deskripsi |
 |---|---|
-| `make help` | Menampilkan seluruh daftar perintah yang tersedia |
+| `make help` | Menampilkan panduan seluruh perintah Makefile |
 | `make setup` | Menyiapkan `web/.env.local` dan mengunduh dependensi npm |
-| `make dev` | Menjalankan server development Next.js (`http://localhost:3000`) |
-| `make build` | Mengompilasi aplikasi Next.js untuk rilis produksi |
-| `make start` | Menjalankan server rilis produksi Next.js |
-| `make install` | Menginstal/memperbarui dependensi npm di folder `web/` |
-| `make seed-users` | Menghasilkan 4 akun nakes uji ke Supabase |
-| `make lint` | Memeriksa kualitas kode dengan ESLint |
+| `make dev` | Menjalankan server development Next.js |
+| `make build` | Mengompilasi aplikasi untuk mode produksi |
+| `make start` | Menjalankan server aplikasi mode produksi |
+| `make seed-users` | Mendaftarkan 4 akun nakes uji ke Supabase Auth |
+| `make lint` | Memeriksa kualitas kode web dengan ESLint |
 | `make test-e2e` | Menjalankan automated test Playwright end-to-end |
 | `make charts` | Merender ulang gambar flowchart 300 DPI (`tools/report_docs/render_charts.py`) |
-| `make docs` | Menyusun ulang dokumen Project Charter DOCX formal (`tools/report_docs/main.py`) |
-| `make clean` | Menghapus folder cache build `web/.next` |
+| `make docs` | Mengompilasi dokumen Project Charter DOCX formal (`tools/report_docs/main.py`) |
+| `make clean` | Membersihkan cache build `.next` |
 
 ---
 
-## 8b. Panduan Menjalankan Backend Python Legacy & Tooling (Opsional / Riset)
+## 9. Rangkaian Pengujian Terautomasi (Dual-Layer Testing)
 
-Modul backend Python FastAPI dan toolchain generator dokumen formal dikelola menggunakan **Astral `uv`**:
+Repositori dilengkapi pengujian menyeluruh pada dua layer sistem:
 
+### A. Uji End-to-End Web Platform (Playwright)
+Menguji skenario operasional nyata pada database Supabase: alur login nakes, pengisian KRS oleh Bidan RS, laporan kunjungan bertanda bahaya oleh Bidan Kelurahan, kemunculan Red Alert di dashboard Kepala Puskesmas, dan pergantian tab tanpa muat ulang oleh Dinkes:
 ```bash
-# Persiapan environment Python
-cp .env.example .env
-uv sync
-
-# Menjalankan basis data lokal (fallback otomatis ke SQLite bila tanpa Docker)
-docker compose up -d
-
-# Seeding data awal modul Python
-uv run python -m app.db.seed
-
-# Menjalankan server backend FastAPI
-uv run python main.py     # atau: uv run uvicorn app.main:app --reload --port 8000
+make test-e2e
 ```
-- Dokumentasi API Interaktif (Swagger UI): **`http://localhost:8000/docs`**
-- Endpoint Pemeriksaan Kesehatan: **`http://localhost:8000/health`**
----
 
-## 9. Verifikasi Otomatis (Smoke Test Suite)
-
-Repositori dilengkapi rangkaian uji otomatis menyeluruh tanpa mock eksternal yang mencakup 9 skenario inti:
-
+### B. Uji Engine Backend Python (Smoke Test)
+Menguji 9 skenario inti modul backend Python dan evaluasi triase deterministik:
 ```bash
 uv run python tests/smoke_test.py
 ```
 
-Rangkaian pengujian memverifikasi:
-1. Endpoint status kesehatan sistem (`/health`).
-2. Ketersediaan master data 13 Faskes Surabaya.
-3. Kepatuhan isolasi tenant (`X-Faskes-ID`).
-4. Pendaftaran pasien baru saat discharge planning dan pembuatan 4 jadwal KF otomatis.
-5. Verifikasi challenge token Meta Webhook (GET).
-6. Transisi status onboarding pasien saat membalas pesan afirmasi.
-7. Evaluasi triase deterministik (deteksi kondisi Merah pada KF1).
-8. Prioritisasi antrean triase dan pembuatan link `wa.me` pre-filled untuk ibu dan suami.
-9. Pencatatan intervensi bidan dan penerbitan entri `audit_logs`.
+### C. Pemeriksaan Linter Frontend
+```bash
+make lint
+```
 
 ---
 
-## 10. Contoh Uji Endpoint Cepat (cURL)
+## 10. Contoh Pengujian Endpoint API (cURL)
 
-### 1. Cek Antrean Triase Faskes (Puskesmas Jagir)
+### 1. Pendaftaran Pasien Pulang (Bidan RS)
 ```bash
-curl -X GET "http://localhost:8000/api/v1/triage/queue" \
-  -H "X-Faskes-ID: 4"
-```
-
-### 2. Simulasi Webhook Pesan Masuk dari Ibu
-```bash
-curl -X POST "http://localhost:8000/api/v1/webhook" \
+curl -X POST "http://localhost:3000/api/v1/discharge" \
   -H "Content-Type: application/json" \
-  -d '{"from": "081230000003", "text": "2"}'
-```
-
-### 3. Pendaftaran Ibu Nifas Baru saat Pulang
-```bash
-curl -X POST "http://localhost:8000/api/v1/mothers" \
-  -H "Content-Type: application/json" \
-  -H "X-Faskes-ID: 4" \
+  -H "Authorization: Bearer <TOKEN_BIDAN_RS>" \
   -d '{
-    "faskes_id": 4,
     "nik": "3578012345670001",
-    "no_rm": "RM-2026-7788",
-    "nama_ibu": "Ny. Nurul Hidayati",
-    "no_wa_ibu": "081234567890",
-    "waktu_persalinan": "2026-10-06T10:00:00Z",
-    "metode_persalinan": "SPONTAN",
-    "paritas": "P1A0",
-    "status_pemantauan": "ONBOARDING_PENDING",
-    "nama_suami": "Bpk. Agus Salim",
-    "no_wa_suami": "081234567891",
-    "hubungan": "SUAMI"
+    "nama_ibu": "Ny. Siti Aminah",
+    "alamat_lengkap": "Jl. Jepara No. 10, Kel. Gundih",
+    "kelurahan_id": "<UUID_KELURAHAN_GUNDIH>",
+    "no_whatsapp_ibu": "+6281234567890",
+    "diagnosis_sebelum_pulang": "Post partum normal hari ke-2",
+    "diagnosis_perawatan": "Luka perineum derajat 2 terawat baik",
+    "rekomendasi_perawatan_rumah": "Mobilisasi bertahap, rawat luka bersih, ASI eksklusif",
+    "jadwal_kunjungan_ulang": "2026-11-05",
+    "faskes_kunjungan_ulang": "PUSKESMAS"
   }'
 ```
 
----
-## 11. Generator Diagram Alir & Laporan Formal
-
-Repositori menyediakan toolchain lokal murni Python untuk merender diagram beresolusi tinggi (300 DPI) dan mengompilasi dokumen Project Charter:
-
+### 2. Pelaporan Kunjungan Rumah Bertoken (Bidan Kelurahan)
 ```bash
-# 1. Render ulang seluruh gambar flowchart (300 DPI) ke docs/assets/
-uv run python tools/report_docs/render_charts.py
+curl -X POST "http://localhost:3000/api/v1/visit/submit" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "token_kunjungan": "<TOKEN_64_HEX>",
+    "suhu_tubuh": 38.5,
+    "perdarahan_abnormal": true,
+    "nyeri_perut_hebat": true,
+    "luka_berbau_infeksi": false,
+    "pusing_muntah_lemas": true,
+    "status_hasil": "ADA_MASALAH",
+    "catatan_kebidanan": "Ibu demam tinggi, darah nifas banyak dan nyeri perut",
+    "konfirmasi_jadwal_kontrol": "2026-11-03"
+  }'
+```
 
-# 2. Kompilasi dokumen resmi Project Charter DOCX
-uv run python tools/report_docs/main.py
+### 3. Eksekusi Background Cron SLA (Tiap Menit)
+```bash
+curl -X GET "http://localhost:3000/api/cron" \
+  -H "Authorization: Bearer sim_nifas_cron_secret_2026"
 ```
 
 ---
 
-## 12. Informasi Keamanan & Kerahasiaan
+## 11. Generator Diagram Alir & Laporan Formal
 
-Repositori ini **bebas dari kredensial rahasia, nomor telepon pribadi, dan token produksi**. Variabel pada `.env.example` menggunakan nilai contoh (*dummy*) untuk simulasi lokal. Token akses Meta Cloud API dan basis data produksi dikonfigurasikan secara terisolasi pada lingkungan server deployment.
+Repositori menyediakan toolchain lokal murni Python untuk merender diagram beresolusi tinggi (300 DPI) dan mengompilasi dokumen resmi Project Charter:
+
+```bash
+# 1. Render ulang seluruh gambar diagram alir (300 DPI) ke docs/assets/
+make charts
+
+# 2. Kompilasi dokumen resmi Project Charter DOCX
+make docs
+```
+
+---
+
+## 12. Keamanan Lingkungan & Sanitasi Repositori
+
+1. **Bebas Kredensial Produksi**: Repositori ini bebas dari kunci rahasia, nomor telepon pribadi, dan token produksi. Seluruh konfigurasi kredensial dikelola melalui file lingkungan lokal (`web/.env.local`) yang diabaikan oleh git (`.gitignore`).
+2. **Data Sintetis Pengujian**: Seluruh data nama pasien, NIK, dan nomor telepon yang tercantum dalam pengujian atau contoh adalah data sintetis (*dummy*) untuk simulasi teknis.
+3. **Kepatuhan Privasi**: Sistem tidak mengirimkan data identitas pasien ke layanan publik atau model kecerdasan buatan eksternal tanpa enkripsi dan persetujuan resmi.
