@@ -38,8 +38,10 @@ def get_triage_queue(
     Menampilkan keluhan, status warna triase, serta tombol direct wa.me ke Ibu dan Suami dengan teks otomatis siap kirim.
     """
     statement = (
-        select(ScreeningLog, Mother)
+        select(ScreeningLog, Mother, EmergencyContact, Faskes)
         .join(Mother, ScreeningLog.mother_id == Mother.id)
+        .outerjoin(EmergencyContact, EmergencyContact.mother_id == Mother.id)
+        .outerjoin(Faskes, Faskes.id == Mother.faskes_id)
     )
 
     if faskes_id is not None:
@@ -52,19 +54,19 @@ def get_triage_queue(
     statement = statement.order_by(ScreeningLog.responded_at.desc())
     items = session.exec(statement).all()
 
+    # Pre-fetch nama bidan per faskes dalam 1 query batch
+    faskes_ids = {m.faskes_id for _, m, _, _ in items if m.faskes_id is not None}
+    bidan_map: dict[int, str] = {}
+    if faskes_ids:
+        users = session.exec(select(User).where(User.faskes_id.in_(faskes_ids))).all()
+        for u in users:
+            if u.faskes_id and u.faskes_id not in bidan_map:
+                bidan_map[u.faskes_id] = u.nama_lengkap
+
     queue_data = []
-    for log, mother in items:
-        # Ambil kontak darurat suami
-        emergency = session.exec(
-            select(EmergencyContact).where(EmergencyContact.mother_id == mother.id)
-        ).first()
-
-        faskes = session.get(Faskes, mother.faskes_id)
+    for log, mother, emergency, faskes in items:
         nama_faskes = faskes.nama_faskes if faskes else "Puskesmas"
-
-        # Bidan default
-        bidan = session.exec(select(User).where(User.faskes_id == mother.faskes_id)).first()
-        nama_bidan = bidan.nama_lengkap if bidan else "Bidan Jaga"
+        nama_bidan = bidan_map.get(mother.faskes_id, "Bidan Jaga")
 
         # 1-klik wa.me Ibu
         mother_msg = generate_bidan_followup_message(
