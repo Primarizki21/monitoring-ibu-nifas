@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="240" viewBox="0 0 1400 240" fill="none">
+  <!-- Ombak Selat Madura: garis tipis berlapis di dasar halaman -->
+  <g stroke-linecap="round">
+    <path d="M0 120 C 120 92 230 92 350 120 S 580 148 700 120 S 930 92 1050 120 S 1280 148 1400 120" stroke="#ffffff" stroke-opacity=".55" stroke-width="1.5"/>
+    <path d="M0 150 C 120 122 230 122 350 150 S 580 178 700 150 S 930 122 1050 150 S 1280 178 1400 150" stroke="#0f4c5c" stroke-opacity=".10" stroke-width="1.5"/>
+    <path d="M0 178 C 120 150 230 150 350 178 S 580 206 700 178 S 930 150 1050 178 S 1280 206 1400 178" stroke="#ffffff" stroke-opacity=".45" stroke-width="1.5"/>
+    <path d="M0 204 C 120 176 230 176 350 204 S 580 232 700 204 S 930 176 1050 204 S 1280 232 1400 204" stroke="#0f4c5c" stroke-opacity=".08" stroke-width="1.5"/>
+    <path d="M0 228 C 120 200 230 200 350 228 S 580 256 700 228 S 930 200 1050 228 S 1280 256 1400 228" stroke="#ffffff" stroke-opacity=".35" stroke-width="1.5"/>
+  </g>
+</svg>

@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+/* Token SIM-NIFAS: laut Selat Madura, jamu kunyit, daun sirih, cahaya subuh. */
+@theme {
+  --color-selat: #0f4c5c;
+  --color-selat-tua: #0a3440;
+  --color-selat-muda: #2f7383;
+  --color-kunyit: #e9a23b;
+  --color-kunyit-tua: #9a5e0c;
+  --color-sirih: #5e8c61;
+  --color-blush: #f4c7c3;
+  --color-kabut: #d8ecea;
+  --color-tinta: #1d2b36;
+  --color-tinta-redup: #4b5d6a;
+
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-bricolage), var(--font-jakarta), ui-sans-serif, sans-serif;
+
+  --radius-kaca: 1.5rem;
+}
+
+/* Panel kaca: cukup pekat agar teks tetap kontras di atas latar warna-warni. */
+@utility kaca {
+  background: rgb(255 255 255 / 0.62);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  backdrop-filter: blur(22px) saturate(160%);
+  border: 1px solid rgb(255 255 255 / 0.75);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    0 24px 48px -24px rgb(15 76 92 / 0.35);
+}
+
+@utility kaca-tipis {
+  background: rgb(255 255 255 / 0.42);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  backdrop-filter: blur(14px) saturate(150%);
+  border: 1px solid rgb(255 255 255 / 0.6);
+}
+
+@utility kaca-gelap {
+  background: rgb(10 52 64 / 0.72);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  backdrop-filter: blur(22px) saturate(140%);
+  border: 1px solid rgb(255 255 255 / 0.14);
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  @apply min-h-screen font-sans text-tinta antialiased;
+  background-color: #eaf3f1;
+  background-image:
+    url("/brand/ombak.svg"),
+    radial-gradient(60rem 40rem at 8% -10%, rgb(244 199 195 / 0.85), transparent 60%),
+    radial-gradient(50rem 36rem at 100% 0%, rgb(233 162 59 / 0.32), transparent 55%),
+    radial-gradient(70rem 50rem at 80% 110%, rgb(47 115 131 / 0.45), transparent 60%),
+    linear-gradient(180deg, #f6ece6 0%, #e4f0ee 55%, #d3e7e6 100%);
+  background-size: 1400px auto, auto, auto, auto, auto;
+  background-position: center bottom, 0 0, 0 0, 0 0, 0 0;
+  background-repeat: repeat-x, no-repeat, no-repeat, no-repeat, no-repeat;
+  background-attachment: fixed;
+}
+
+/* Browser tanpa backdrop-filter: panel jadi putih pekat agar tetap terbaca. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .kaca,
+  .kaca-tipis {
+    background: rgb(255 255 255 / 0.94);
+  }
+}
+
+@layer components {
+  .input {
+    @apply block w-full rounded-xl border border-selat/20 bg-white/85 px-3.5 py-2.5 text-base text-tinta shadow-[inset_0_1px_2px_rgb(15_76_92/0.08)] outline-none transition-colors placeholder:text-tinta-redup/60 focus:border-selat-muda focus:bg-white focus:ring-4 focus:ring-selat/15 disabled:cursor-not-allowed disabled:opacity-60 aria-invalid:border-red-500 aria-invalid:ring-red-500/15;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-selat px-5 py-3 font-semibold text-white shadow-[0_10px_24px_-10px_rgb(15_76_92/0.8)] transition-colors hover:bg-selat-tua focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-kunyit/50 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-secondary {
+    @apply kaca-tipis inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 font-medium text-selat transition-colors hover:bg-white/70 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-selat/20;
+  }
+  .tautan {
+    @apply font-medium text-selat underline decoration-kunyit decoration-2 underline-offset-4 hover:text-selat-tua focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-selat/30;
+  }
+}
+
+:focus-visible {
+  outline-color: var(--color-selat);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Satu-satunya animasi saat memuat: cincin SLA terisi dari kosong. */
+@keyframes isi-cincin {
+  from {
+    stroke-dashoffset: var(--keliling);
+  }
+}

@@ -127,9 +127,11 @@ pengmas-rs-surabaya/
 │   ├── Flowchart_4.drawio        # Arsip draw.io integrasi RBAC Dinkes Surabaya
 │   ├── DRAWIO_STYLE_GUIDE.md     # Panduan standarisasi visual dan palet warna medis
 │   ├── PROJECT_CHARTER_MONITORING_NIFAS.docx # Dokumen resmi charter nifas
+│   ├── PRD_SIM_NIFAS_SURABAYA.md # PRD discharge planning & kunjungan rumah 2x24 jam (prototipe web)
 │   └── assets/                   # Render gambar PNG flowchart (300 DPI) untuk dokumen
 ├── tests/
 │   └── smoke_test.py             # 9 pengujian end-to-end terautomasi
+├── web/                          # Prototipe demo PWA: Next.js + Supabase (lihat web/README.md)
 ├── tools/report_docs/            # Engine diagram Matplotlib & builder DOCX lokal
 │   ├── chart_engine.py           # Engine perutean ortogonal & shapes Matplotlib
 │   ├── flowchart_definitions.py  # Definisi 4 alur diagram (Onboarding, Triase, Intervensi, Master)
@@ -140,9 +142,10 @@ pengmas-rs-surabaya/
 ├── pyproject.toml                # Dependensi Python terkelola via Astral uv
 ├── .env.example                  # Template variabel lingkungan aman
 ├── FLOWCHART.md                  # Dokumentasi diagram alir Mermaid ANSI/ISO
-├── main.py                       # Root runner entrypoint praktis
-├── AGENTS.md                     # Pedoman aturan agen, RAB, & matriks klinis
-└── README.md                     # Dokumentasi arsitektur teknis sistem
+├── Makefile                  # Otomasi perintah: setup, dev, build, seed, test-e2e
+├── main.py                   # Root runner entrypoint praktis (Python)
+├── AGENTS.md                 # Pedoman aturan agen, RAB, & matriks klinis
+└── README.md                 # Dokumentasi arsitektur teknis sistem
 ```
 
 ---
@@ -209,52 +212,120 @@ Untuk memenuhi prinsip kerahasiaan rekam medis, sistem menerapkan isolasi tenant
 
 ---
 
-## 8. Panduan Menjalankan Sistem (Developer Quickstart)
+## 8. Panduan Menjalankan Prototipe Web SIM-NIFAS (Next.js & Supabase)
 
-Proyek ini dikelola menggunakan paket manajer modern **Astral `uv`**.
+Prototipe web SIM-NIFAS di direktori `web/` mengimplementasikan seluruh alur pemulangan pasien (KRS), kunjungan rumah 2×24 jam bertoken, Red Alert real-time, dan dashboard 10 KPI Surabaya. Seluruh alur kerja telah diotomatisasi melalui **`Makefile`** di root repositori.
 
-### Prasyarat
-- Python 3.12+
-- Astral `uv` (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
-- Docker & Docker Compose (opsional untuk basis data PostgreSQL)
+### Alur Menjalankan Aplikasi dari Awal (Clone Bersih)
 
-### Langkah 1: Persiapan Environment
+#### Langkah 1: Setup Awal & Dependensi
+Jalankan perintah ini di root direktori untuk menginisialisasi lingkungan dan memasang seluruh dependensi:
 ```bash
-# Salin template environment
-cp .env.example .env
+make setup
+```
+> Perintah di atas otomatis menyalin template `web/.env.example` menjadi `web/.env.local` (jika belum ada) dan menjalankan `npm install` di subdirektori `web/`.
 
-# Sinkronisasi dependensi virtual environment
-uv sync
+#### Langkah 2: Konfigurasi Kredensial Supabase
+Buka berkas `web/.env.local` dan masukkan kunci dari proyek Supabase Anda (dapat menggunakan [Supabase Cloud](https://supabase.com) gratis):
+```env
+# Supabase API (Settings > API pada Dashboard Supabase)
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJh...
+SUPABASE_SERVICE_ROLE_KEY=eyJh...
+
+# Opsional: Token Fonnte (fonnte.com). Bila kosong, pesan WA tetap tersimpan di antrean database tanpa error.
+FONNTE_TOKEN=
+
+# URL publik aplikasi & kredensial akun uji
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+CRON_SECRET=sim_nifas_cron_secret_2026
+AKUN_UJI_PASSWORD=Uji-VPB-hlJC
 ```
 
-### Langkah 2: Menjalankan Basis Data
-Pilih salah satu metode basis data:
+#### Langkah 3: Setup Skema Basis Data di Supabase
+Jalankan file SQL berikut secara berurutan pada **SQL Editor** di Dashboard Supabase (atau via CLI `npx supabase db push`):
+1. `web/supabase/migrations/20261029000000_skema_awal.sql` (Tabel faskes, users, discharge, kunjungan, alert, trigger SLA 48 jam & triase otomatis).
+2. `web/supabase/migrations/20261030000000_antrean_wa.sql` (Tabel antrean `log_notifikasi_wa` & trigger otomatis pesan penugasan).
+3. `web/supabase/migrations/20261030010000_perbaikan_advisor.sql` (Optimasi indeks performa & kebijakan RLS).
+4. `web/supabase/seed.sql` (Master data 15 RS, 15 Puskesmas, dan 34 Kelurahan di 6 kecamatan Surabaya).
 
-- **Opsi A: Menggunakan PostgreSQL 16 (Rekomendasi Docker)**:
+#### Langkah 4: Membuat Akun Pengguna Uji
+Setelah database siap dan kredensial di `web/.env.local` terisi, buat 4 akun nakes percontohan:
+```bash
+make seed-users
+```
+> Skrip ini mendaftarkan akun di Supabase Auth dan menautkan profil nakes ke faskes terkait.
+
+#### Langkah 5: Menjalankan Aplikasi Web
+Pilih mode yang diinginkan:
+
+* **Mode Pengembangan (Development)** — untuk ngoding & pengembangan:
   ```bash
-  docker compose up -d
+  make dev
   ```
-- **Opsi B: Fallback SQLite Lokal (Tanpa Docker)**:  
-  Sistem secara otomatis mendeteksi ketersediaan PostgreSQL. Jika kontainer Docker tidak berjalan, sistem otomatis beralih ke file SQLite lokal (`nifas_dev.db`). Developer dapat langsung menjalankan kode tanpa konfigurasi tambahan.
+  Buka browser di **`http://localhost:3000`**. Perubahan kode akan otomatis ter-update (*hot-reload*).
 
-### Langkah 3: Mengisi Data Awal (Seeding)
-Isi database dengan data 13 faskes resmi Surabaya, akun nakes, dan 5 pasien percontohan:
+* **Mode Produksi (Production)** — sangat direkomendasikan untuk **presentasi demo**:
+  ```bash
+  make build
+  make start
+  ```
+  Kompilasi build statis & server production yang cepat tanpa latensi kompilasi awal.
+
+---
+
+### Informasi Akun Uji Login (`/login`)
+Semua akun menggunakan kata sandi bawaan yang dikonfigurasikan di `web/.env.local` (`AKUN_UJI_PASSWORD`): **`Uji-VPB-hlJC`**  
+*(Daftar akun di bawah dikelola oleh skrip `web/scripts/buat-akun-uji.mjs`)*
+
+| Peran Pengguna | Email Login | Hak Akses & Alur |
+|---|---|---|
+| **Bidan RS** | `bidan.rs@uji.test` | Mengisi form pemulangan pasien (`/krs`) & memantau ibu pulang dari RS terkait. |
+| **Bidan Kelurahan** | `bidan.gundih@uji.test` | Menerima penugasan home visit 48 jam, form kunjungan bertoken (`/visit/[token]`), dashboard wilayah kelurahan. |
+| **Kepala Puskesmas** | `kapus.gundih@uji.test` | Supervisi wilayah puskesmas, pemantauan batas SLA, eskalasi Red Alert. |
+| **Admin Dinkes** | `dinkes@uji.test` | Dashboard agregat 10 KPI seluruh kota Surabaya, filter kecamatan & Puskesmas. |
+
+---
+
+### Daftar Lengkap Perintah `Makefile`
+
+| Perintah | Deskripsi |
+|---|---|
+| `make help` | Menampilkan seluruh daftar perintah yang tersedia |
+| `make setup` | Menyiapkan `web/.env.local` dan mengunduh dependensi npm |
+| `make dev` | Menjalankan server development Next.js (`http://localhost:3000`) |
+| `make build` | Mengompilasi aplikasi Next.js untuk rilis produksi |
+| `make start` | Menjalankan server rilis produksi Next.js |
+| `make install` | Menginstal/memperbarui dependensi npm di folder `web/` |
+| `make seed-users` | Menghasilkan 4 akun nakes uji ke Supabase |
+| `make lint` | Memeriksa kualitas kode dengan ESLint |
+| `make test-e2e` | Menjalankan automated test Playwright end-to-end |
+| `make charts` | Merender ulang gambar flowchart 300 DPI (`tools/report_docs/render_charts.py`) |
+| `make docs` | Menyusun ulang dokumen Project Charter DOCX formal (`tools/report_docs/main.py`) |
+| `make clean` | Menghapus folder cache build `web/.next` |
+
+---
+
+## 8b. Panduan Menjalankan Backend Python Legacy & Tooling (Opsional / Riset)
+
+Modul backend Python FastAPI dan toolchain generator dokumen formal dikelola menggunakan **Astral `uv`**:
+
 ```bash
+# Persiapan environment Python
+cp .env.example .env
+uv sync
+
+# Menjalankan basis data lokal (fallback otomatis ke SQLite bila tanpa Docker)
+docker compose up -d
+
+# Seeding data awal modul Python
 uv run python -m app.db.seed
-```
 
-### Langkah 4: Menjalankan Server Backend
-```bash
-# Opsi A: Menggunakan entrypoint runner root
-uv run python main.py
-
-# Opsi B: Menggunakan uvicorn reload langsung
-uv run uvicorn app.main:app --reload --port 8000
+# Menjalankan server backend FastAPI
+uv run python main.py     # atau: uv run uvicorn app.main:app --reload --port 8000
 ```
 - Dokumentasi API Interaktif (Swagger UI): **`http://localhost:8000/docs`**
-- Dokumentasi Alternatif (ReDoc): **`http://localhost:8000/redoc`**
 - Endpoint Pemeriksaan Kesehatan: **`http://localhost:8000/health`**
-
 ---
 
 ## 9. Verifikasi Otomatis (Smoke Test Suite)
