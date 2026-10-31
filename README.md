@@ -239,7 +239,7 @@ FONNTE_TOKEN=
 # URL publik aplikasi & kredensial akun uji
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 CRON_SECRET=sim_nifas_cron_secret_2026
-AKUN_UJI_PASSWORD=UjiNifas2026!
+AKUN_UJI_PASSWORD=Uji-VPB-hlJC
 ```
 
 #### Langkah 3: Setup Skema Basis Data di Supabase
@@ -275,7 +275,8 @@ Pilih mode yang diinginkan:
 ---
 
 ### Informasi Akun Uji Login (`/login`)
-Semua akun menggunakan kata sandi bawaan: **`UjiNifas2026!`**
+Semua akun menggunakan kata sandi bawaan yang dikonfigurasikan di `web/.env.local` (`AKUN_UJI_PASSWORD`): **`Uji-VPB-hlJC`**  
+*(Daftar akun di bawah dikelola oleh skrip `web/scripts/buat-akun-uji.mjs`)*
 
 | Peran Pengguna | Email Login | Hak Akses & Alur |
 |---|---|---|
