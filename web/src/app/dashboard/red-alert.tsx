@@ -15,12 +15,23 @@ export function RedAlert({ alerts }: { alerts: AlertAktif[] }) {
 
   useEffect(() => {
     const supabase = createClient();
+    let timeoutId: number | undefined;
+
+    const jadwalkanRefresh = () => {
+      clearTimeout(timeoutId);
+      timeoutId = window.setTimeout(() => {
+        router.refresh();
+      }, 500);
+    };
+
     const kanal = supabase
       .channel("dashboard-nifas")
-      .on("postgres_changes", { event: "*", schema: "public", table: "tr_emergency_alert" }, () => router.refresh())
-      .on("postgres_changes", { event: "*", schema: "public", table: "tr_discharge" }, () => router.refresh())
+      .on("postgres_changes", { event: "*", schema: "public", table: "tr_emergency_alert" }, jadwalkanRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "tr_discharge" }, jadwalkanRefresh)
       .subscribe();
+
     return () => {
+      clearTimeout(timeoutId);
       supabase.removeChannel(kanal);
     };
   }, [router]);

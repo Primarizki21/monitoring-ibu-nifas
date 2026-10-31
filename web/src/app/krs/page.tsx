@@ -1,18 +1,16 @@
 import { redirect } from "next/navigation";
 import { halamanAwal, wajibLogin } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/header";
+import { ambilMasterFaskes } from "@/lib/data/master";
 import { FormKrs, type Kelurahan } from "./form-krs";
 
 export default async function KrsPage() {
-  const supabase = await createClient();
-  const [profil, { data: kelurahan }, { data: semuaRs }] = await Promise.all([
+  const [profil, master] = await Promise.all([
     wajibLogin(),
-    supabase.from("m_kelurahan").select("id, nama_kelurahan, kecamatan").order("nama_kelurahan"),
-    supabase.from("m_rumah_sakit").select("id, nama_rs"),
+    ambilMasterFaskes(),
   ]);
   if (profil.role !== "BIDAN_RS") redirect(halamanAwal(profil.role));
-  const rs = semuaRs?.find((r) => r.id === profil.rumah_sakit_id);
+  const rs = master.rs.find((r) => r.id === profil.rumah_sakit_id);
 
   return (
     <>
@@ -25,7 +23,7 @@ export default async function KrsPage() {
           Isi data saat ibu keluar rumah sakit. Sistem menugaskan bidan kelurahan dan mulai menghitung batas kunjungan 48 jam.
         </p>
       </header>
-      <FormKrs kelurahan={(kelurahan ?? []) as Kelurahan[]} />
+      <FormKrs kelurahan={master.kelurahan as Kelurahan[]} />
     </main>
     </>
   );

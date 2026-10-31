@@ -23,7 +23,7 @@ import type { Role } from "@/lib/auth";
 import type { AlertAktif, BarisPasien, Kategori, Metrics, TitikGrafik } from "@/lib/data/dashboard";
 import { formatWaktu } from "@/lib/wa/template";
 import { FilterDashboard } from "./filter";
-import { GrafikStatus, GrafikTren } from "./grafik";
+import { GrafikStatus, GrafikTren } from "./grafik-wrapper";
 import { RedAlert } from "./red-alert";
 
 type Opsi = { id: string; nama: string };
@@ -350,7 +350,7 @@ function TabelPasien({
               {pasien.map((p) => {
                 const belum = p.status_kunjungan === "PENDING" || p.status_kunjungan === "NOT_VISITED";
                 return (
-                  <tr key={p.id} className="transition-colors hover:bg-white/45">
+                  <tr key={p.id} className="transition-colors hover:bg-white/45 [content-visibility:auto] [contain-intrinsic-size:auto_56px]">
                     <td className="px-5 py-3 font-semibold">{p.nama_ibu}</td>
                     <td className="max-w-56 px-4 py-3">
                       <span className="line-clamp-2">
