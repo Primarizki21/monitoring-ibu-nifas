@@ -9,5 +9,7 @@ wheels/
 # Virtual environments
 .venv
 *.db
-.env
+.env*
+!.env.example
+*.download
 .pytest_cache/
