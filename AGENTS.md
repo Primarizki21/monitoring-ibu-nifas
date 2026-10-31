@@ -337,3 +337,16 @@ Sebelum menulis rencana atau menyentuh kode, identifikasi domain pekerjaan dan b
    - Buat ID penomoran terpisah (`w:numId`) untuk setiap kelompok sub-bab agar nomor selalu mulai dari 1 secara deterministik.
 2. **Bolding Istilah Kunci**:
    - Setiap poin istilah klinis/teknis utama wajib ditebalkan di awal kalimat run (contoh: `**Zero Medical Hallucination**: penjelasan...`).
+
+---
+
+## 14. Batasan Keamanan & Eksekusi Eksternal (Strict Safety Boundaries)
+
+1. **Larangan `git push`**:
+   - Agen **DILARANG KERAS** menjalankan `git push` atau mem-push kode ke remote repositori git dalam situasi apa pun.
+   - Semua commit git bersifat lokal. Operasi push ke remote hanya boleh dijalankan secara manual oleh pengguna.
+2. **Larangan `npx supabase db push`**:
+   - Alur migrasi Supabase resmi proyek ini menggunakan `npx supabase db push`.
+   - Namun, agen **DILARANG KERAS** mengeksekusi `npx supabase db push`, `npx supabase db reset`, atau mengeksekusi skrip migrasi langsung ke basis data remote Supabase.
+   - Agen hanya bertugas menulis dan memvalidasi berkas migrasi SQL di direktori `web/supabase/migrations/`.
+   - Eksekusi `npx supabase db push` ke database remote **HANYA BOLEH DIJALANKAN OLEH PENGGUNA (USER ONLY)** demi keamanan data dan integritas rekam medis.
