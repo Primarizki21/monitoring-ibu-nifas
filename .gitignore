@@ -14,6 +14,5 @@ wheels/
 *.download
 .pytest_cache/
 
-# Local knowledge graph caches
-graphify-out/.graphify_*
-graphify-out/cache/
+# Local knowledge graph & artifacts
+graphify-out/
