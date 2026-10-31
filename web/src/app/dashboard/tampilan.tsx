@@ -1,3 +1,6 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Activity,
@@ -20,7 +23,7 @@ import { IlustrasiRumah } from "@/components/aset/ilustrasi";
 import { Badge } from "@/components/badge";
 import { SlaRing } from "@/components/sla-ring";
 import type { Role } from "@/lib/auth";
-import type { AlertAktif, BarisPasien, Kategori, Metrics, TitikGrafik } from "@/lib/data/dashboard";
+import { KATEGORI, type AlertAktif, type BarisPasien, type Kategori, type Metrics, type TitikGrafik } from "@/lib/data/dashboard";
 import { formatWaktu } from "@/lib/wa/template";
 import { FilterDashboard } from "./filter";
 import { GrafikStatus, GrafikTren } from "./grafik-wrapper";
@@ -87,7 +90,26 @@ function persen(n: number, total: number) {
 }
 
 export function TampilanDashboard(d: DataTampilan) {
+  const [tab, setTab] = useState<"ringkasan" | "data">(d.tab);
+  const [kategori, setKategori] = useState<Kategori | undefined>(d.kategori);
   const sekarang = new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+  const gantiTab = (t: "ringkasan" | "data") => {
+    setTab(t);
+    if (typeof window !== "undefined") {
+      const url = tautan(d.params, { tab: t === "data" ? "data" : undefined, kategori: t === "data" ? kategori : undefined });
+      window.history.replaceState(null, "", url);
+    }
+  };
+
+  const pilihKategori = (k?: Kategori) => {
+    setTab("data");
+    setKategori(k);
+    if (typeof window !== "undefined") {
+      const url = tautan(d.params, { tab: "data", kategori: k });
+      window.history.replaceState(null, "", url);
+    }
+  };
 
   return (
     <main className={`mx-auto max-w-7xl space-y-4 px-3 pt-6 sm:px-4 ${d.alerts.length ? "pb-24" : "pb-12"}`}>
@@ -101,16 +123,28 @@ export function TampilanDashboard(d: DataTampilan) {
           <FilterDashboard mulai={d.filter.mulai} selesai={d.filter.selesai} puskesmas={d.puskesmas} kelurahan={d.kelurahan} />
         </div>
         <nav className="mt-5 flex gap-1 rounded-2xl bg-white/45 p-1 ring-1 ring-white/70 sm:w-fit" aria-label="Tampilan dashboard">
-          <TabLink href={tautan(d.params, { tab: undefined, kategori: undefined })} aktif={d.tab === "ringkasan"} ikon={PieChart}>
+          <button
+            type="button"
+            onClick={() => gantiTab("ringkasan")}
+            aria-current={tab === "ringkasan" ? "page" : undefined}
+            className="inline-flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-tinta-redup transition-colors hover:text-selat aria-[current=page]:bg-white aria-[current=page]:text-selat aria-[current=page]:shadow-sm sm:flex-none"
+          >
+            <PieChart className="size-4" aria-hidden="true" />
             Ringkasan
-          </TabLink>
-          <TabLink href={tautan(d.params, { tab: "data" })} aktif={d.tab === "data"} ikon={Users}>
+          </button>
+          <button
+            type="button"
+            onClick={() => gantiTab("data")}
+            aria-current={tab === "data" ? "page" : undefined}
+            className="inline-flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-tinta-redup transition-colors hover:text-selat aria-[current=page]:bg-white aria-[current=page]:text-selat aria-[current=page]:shadow-sm sm:flex-none"
+          >
+            <Users className="size-4" aria-hidden="true" />
             Data ibu nifas
-          </TabLink>
+          </button>
         </nav>
       </section>
 
-      {d.role === "BIDAN_RS" && d.tab === "ringkasan" && (
+      {d.role === "BIDAN_RS" && tab === "ringkasan" && (
         <Link
           href="/krs"
           className="kaca flex items-center gap-4 rounded-[var(--radius-kaca)] p-4 transition-colors hover:bg-white/75 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-selat/20 sm:p-5"
@@ -128,26 +162,16 @@ export function TampilanDashboard(d: DataTampilan) {
 
       <RedAlert alerts={d.alerts} />
 
-      {d.tab === "ringkasan" ? <Ringkasan {...d} /> : <TabData {...d} />}
+      {tab === "ringkasan" ? (
+        <Ringkasan {...d} onPilihKategori={pilihKategori} onLihatSemua={() => gantiTab("data")} />
+      ) : (
+        <TabData {...d} kategori={kategori} onPilihKategori={pilihKategori} />
+      )}
     </main>
   );
 }
 
-function TabLink({ href, aktif, ikon: Ikon, children }: { href: string; aktif: boolean; ikon: LucideIcon; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      scroll={false}
-      aria-current={aktif ? "page" : undefined}
-      className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-tinta-redup transition-colors hover:text-selat aria-[current=page]:bg-white aria-[current=page]:text-selat aria-[current=page]:shadow-sm sm:flex-none"
-    >
-      <Ikon className="size-4" aria-hidden="true" />
-      {children}
-    </Link>
-  );
-}
-
-function Ringkasan(d: DataTampilan) {
+function Ringkasan(d: DataTampilan & { onPilihKategori: (k?: Kategori) => void; onLihatSemua: () => void }) {
   const m = d.metrics;
   const t = m.total_dipulangkan;
   return (
@@ -156,10 +180,11 @@ function Ringkasan(d: DataTampilan) {
         {daftarIndikator(m).map((k, i) => {
           const w = WARNA[k.warna];
           return (
-            <Link
+            <button
               key={k.judul}
-              href={tautan(d.params, { tab: "data", kategori: k.kategori })}
-              className={`group rounded-2xl p-4 ring-1 backdrop-blur-xl transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-18px_rgb(15_76_92/0.5)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-selat/25 ${w.kartu}`}
+              type="button"
+              onClick={() => d.onPilihKategori(k.kategori)}
+              className={`group cursor-pointer text-left rounded-2xl p-4 ring-1 backdrop-blur-xl transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-18px_rgb(15_76_92/0.5)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-selat/25 ${w.kartu}`}
             >
               <div className="flex items-start justify-between gap-2">
                 <span className={`grid size-9 place-items-center rounded-xl text-white ${w.ikon}`} aria-hidden="true">
@@ -173,12 +198,13 @@ function Ringkasan(d: DataTampilan) {
                 <span className="ml-1 text-sm font-medium text-tinta-redup">orang</span>
               </p>
               <p className="text-xs tabular-nums text-tinta-redup">{i === 0 ? "pada periode ini" : `${persen(k.nilai, t)} dari yang dipulangkan`}</p>
-            </Link>
+            </button>
           );
         })}
-        <Link
-          href={tautan(d.params, { tab: "data", kategori: undefined })}
-          className="flex flex-col justify-between rounded-2xl bg-selat p-4 text-white shadow-[0_16px_32px_-18px_rgb(15_76_92/0.8)] transition-colors hover:bg-selat-tua focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-kunyit/50"
+        <button
+          type="button"
+          onClick={() => d.onPilihKategori(undefined)}
+          className="flex flex-col cursor-pointer text-left justify-between rounded-2xl bg-selat p-4 text-white shadow-[0_16px_32px_-18px_rgb(15_76_92/0.8)] transition-colors hover:bg-selat-tua focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-kunyit/50"
         >
           <div className="flex items-start justify-between gap-2">
             <span className="grid size-9 place-items-center rounded-xl bg-white/15" aria-hidden="true">
@@ -192,7 +218,7 @@ function Ringkasan(d: DataTampilan) {
             <span className="ml-1 text-sm font-medium text-white/70">orang</span>
           </p>
           <p className="text-xs font-semibold text-kunyit">Lihat semua data</p>
-        </Link>
+        </button>
       </section>
 
       <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
@@ -220,9 +246,9 @@ function Ringkasan(d: DataTampilan) {
           judul="Data ibu nifas terbaru"
           sub={`6 kepulangan terakhir dari ${t} pada periode ini`}
           aksi={
-            <Link href={tautan(d.params, { tab: "data" })} className="btn-secondary px-3 py-2 text-sm">
+            <button type="button" onClick={d.onLihatSemua} className="btn-secondary cursor-pointer px-3 py-2 text-sm">
               Lihat semua
-            </Link>
+            </button>
           }
         />
     </>
@@ -264,30 +290,36 @@ const CHIP: { kategori?: Kategori; label: string; kunci: keyof Metrics }[] = [
   { kategori: "sehat", label: "Sehat", kunci: "sehat" },
 ];
 
-// Tab detail: seluruh data ibu nifas, bisa dipersempit per indikator.
-function TabData(d: DataTampilan) {
+function TabData(d: DataTampilan & { kategori: Kategori | undefined; onPilihKategori: (k?: Kategori) => void }) {
   const aktif = CHIP.find((c) => c.kategori === d.kategori) ?? CHIP[0];
+
+  const pasienTampil = useMemo(() => {
+    if (!d.kategori) return d.pasien;
+    const [kolom, nilai] = KATEGORI[d.kategori];
+    return d.pasien.filter((p) => p[kolom] === nilai);
+  }, [d.pasien, d.kategori]);
+
   return (
     <>
       <nav className="flex gap-2 overflow-x-auto pb-1" aria-label="Kategori data">
         {CHIP.map((c) => (
-          <Link
+          <button
             key={c.label}
-            href={tautan(d.params, { tab: "data", kategori: c.kategori })}
-            scroll={false}
-            aria-current={c === aktif ? "true" : undefined}
-            className="kaca-tipis inline-flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium text-tinta transition-colors hover:bg-white/70 aria-[current=true]:bg-selat aria-[current=true]:text-white"
+            type="button"
+            onClick={() => d.onPilihKategori(c.kategori)}
+            aria-current={c.kategori === d.kategori ? "true" : undefined}
+            className="kaca-tipis inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium text-tinta transition-colors hover:bg-white/70 aria-[current=true]:bg-selat aria-[current=true]:text-white"
           >
             {c.label}
             <span className="rounded-full bg-black/5 px-1.5 text-xs font-semibold tabular-nums">{d.metrics[c.kunci]}</span>
-          </Link>
+          </button>
         ))}
       </nav>
       <TabelPasien
-        pasien={d.pasien}
+        pasien={pasienTampil}
         role={d.role}
         judul={aktif.kategori ? `Ibu nifas: ${aktif.label.toLowerCase()}` : "Semua data ibu nifas"}
-        sub={`${d.pasien.length} pasien, kepulangan terbaru di atas`}
+        sub={`${pasienTampil.length} pasien, kepulangan terbaru di atas`}
       />
     </>
   );

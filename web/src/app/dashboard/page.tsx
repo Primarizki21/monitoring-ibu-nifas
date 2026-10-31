@@ -31,11 +31,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const kategori = tab === "data" && q.kategori && q.kategori in KATEGORI ? (q.kategori as Kategori) : undefined;
 
   const db = await createClient();
-  // Pengambilan data analitik dan pasien dibatasi RLS; data master RS & wilayah di-cache server-side.
+  // Pengambilan data analitik dan 100 pasien terbaru dibatasi RLS; data master RS & wilayah di-cache server-side.
   const [profil, { metrics, chart_series }, pasien, alerts, master] = await Promise.all([
     wajibLogin(),
     ambilAnalitik(db, filter),
-    ambilDaftarPasien(db, filter, tab === "data" ? 500 : 6, kategori),
+    ambilDaftarPasien(db, filter, 100),
     ambilAlertAktif(db),
     ambilMasterFaskes(),
   ]);

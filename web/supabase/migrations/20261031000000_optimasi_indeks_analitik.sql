@@ -138,3 +138,15 @@ $$;
 
 -- Izin pemanggilan: authenticated (nakes login) & service_role
 grant execute on function hitung_analitik_dashboard(timestamptz, timestamptz, uuid, uuid) to authenticated, service_role;
+
+-- 3. OPTIMASI RLS DISCHARGE_BACA ---------------------------------------
+-- Menghilangkan evaluasi boleh_lihat_discharge() per baris (InitPlan dievaluasi 1x per query).
+-- Memangkas latensi query antrean dan daftar pasien pada akun Bidan / Puskesmas / RS.
+drop policy if exists discharge_baca on tr_discharge;
+create policy discharge_baca on tr_discharge for select to authenticated
+    using (
+        (select (profil_saya()).role) = 'SUPERADMIN_DINKES'
+        or ((select (profil_saya()).role) = 'KEPALA_PUSKESMAS' and puskesmas_id = (select (profil_saya()).puskesmas_id))
+        or ((select (profil_saya()).role) = 'BIDAN_KELURAHAN' and kelurahan_id = (select (profil_saya()).kelurahan_id))
+        or ((select (profil_saya()).role) = 'BIDAN_RS' and rs_asal_id = (select (profil_saya()).rumah_sakit_id))
+    );
