@@ -261,7 +261,35 @@ Sistem menerapkan template pesan deterministik terstruktur sesuai algoritma Buku
 | **Minggu 9 – 12** | **Bulan 3 Live** | Onboarding Kohort 3 (~500 ibu baru), kelulusan nifas 42 hari Kohort 1 & 2, penarikan data analitik epidemiologi Surabaya, serah terima laporan ke Dinkes. Total 1.500 ibu kumulatif. |
 ---
 
-## 12. Workflow Mandatori: Siklus Eksekusi 5 Langkah (Karpathy & J-Space Aligned)
+## 12. Knowledge Graph & Code Intelligence (CodeGraph & Graphify)
+
+Repositori ini dilengkapi dua lapisan *knowledge graph* terintegrasi untuk mempercepat navigasi kode, menjaga integritas arsitektur, dan menganalisis dampak perubahan (*blast radius*):
+
+### A. CodeGraph (AST & Relasi Pemanggilan Simbol)
+- **Direktori Indeks**: `.codegraph/` (Database SQLite lokal & daemon tracking).
+- **Fungsi Utama**:
+  - Memetakan seluruh simbol kode (fungsi, class, interface, route API) beserta rantai pemanggil (*callers* dan *callees*).
+  - Menampilkan definisi kode *verbatim* dan analisis *blast radius* dalam satu panggilan.
+- **Penggunaan Utama**:
+  - MCP Tool (Paling Direkomendasikan): `codegraph_explore` (panggil sebelum membaca/mengedit file).
+  - Terminal Shell: `codegraph explore "<simbol atau pertanyaan>"`.
+  - Penelusuran Dampak: `codegraph callers <simbol>` dan `codegraph impact <simbol>`.
+- **Aturan Sinkronisasi**: Wajib menjalankan `codegraph sync` setelah melakukan perbaikan atau modifikasi kode.
+
+### B. Graphify (Arsitektur Makro & Deteksi Komunitas Sistem)
+- **Direktori Output**: `graphify-out/` (`graph.json`, `graph.html`, `GRAPH_REPORT.md`).
+- **Fungsi Utama**:
+  - Memetakan topologi makro sistem secara visual, mendeteksi komunitas modul (*community detection*), dan mengidentifikasi *god nodes* (abstraksi inti).
+  - Menyediakan visualisasi interaktif mandiri yang dapat dibuka langsung di browser (`graphify-out/graph.html`).
+- **Penggunaan Utama**:
+  - Laporan Audit Arsitektur: Baca `graphify-out/GRAPH_REPORT.md` untuk memahami struktur dan keterkaitan modul.
+  - Visualisasi Interaktif: Buka `graphify-out/graph.html` di browser.
+  - Query Graph: Jalankan `graphify query "<pertanyaan arsitektur>"`.
+  - Pembaruan Inkremental: Jalankan `graphify update .` saat ada penambahan file atau refactoring besar.
+
+---
+
+## 13. Workflow Mandatori: Siklus Eksekusi 5 Langkah (Karpathy & J-Space Aligned)
 
 Setiap sesi pekerjaan, implementasi fitur, perbaikan bug, atau penambahan dokumen **wajib mematuhi siklus 5 langkah berurutan berikut**:
 
@@ -286,6 +314,11 @@ Sebelum menulis rencana atau menyentuh kode, identifikasi domain pekerjaan dan b
      c. *Pemisahan DDL & DML*: Pisahkan pembuatan struktur tabel (DDL) dan pembaruan/backfill data (DML).
      d. *Verifikasi Pra-Push & User-Only*: Agen wajib memverifikasi ulang seluruh sintaks SQL sebelum meminta user menjalankan `npx supabase db push`.
 
+5. **Navigasi Kode Cepat & Arsitektur (CodeGraph & Graphify)**:
+   - Repositori telah diindeks penuh menggunakan **CodeGraph** (`.codegraph/`) dan **Graphify** (`graphify-out/`).
+   - **Sebelum melakukan pencarian teks luas (`grep`/`find`) atau membaca file satu per satu**, utamakan menggunakan CodeGraph via MCP `codegraph_explore` atau CLI `codegraph explore "<query>"` untuk mendapatkan definisi simbol, rantai pemanggil, dan estimasi *blast radius*.
+   - Gunakan Graphify (`graphify query "<pertanyaan>"` atau membaca `graphify-out/GRAPH_REPORT.md`) untuk memahami arsitektur makro, klaster komunitas modul, dan relasi sistem.
+
 ### Langkah 2: Dekomposisi & Inisialisasi To-Do List
 1. **Dekomposisi Low-Level Objektif**:
    - Pecah arahan pengguna menjadi butir-butir to-do granular dengan kriteria keberhasilan yang terukur (contoh: `buat fungsi X -> verifikasi via assert Y`).
@@ -309,6 +342,11 @@ Sebelum menulis rencana atau menyentuh kode, identifikasi domain pekerjaan dan b
 4. **Update Status Real-Time**:
    - Tandai to-do selesai (`done`) seketika setelah bukti verifikasi fisik diperoleh.
 
+5. **Wajib Sinkronisasi CodeGraph (`codegraph sync`)**:
+   - Setiap kali selesai melakukan perbaikan kode, *bug fix*, *refactoring*, atau penambahan fitur baru, agen **WAJIB menjalankan**:
+     `codegraph sync`
+   - Perintah ini memastikan basis data indeks CodeGraph (`.codegraph/`) selalu sinkron dan mencerminkan struktur simbol, edge pemanggilan, dan dependensi terbaru sebelum beralih ke tugas berikutnya.
+
 ### Langkah 5: Siklus Atomic Commits Terisolasi
 1. **Satu Unit Perubahan Logis**:
    - Begitu 1 unit pekerjaan selesai dan terverifikasi, langsung lakukan commit sebelum berpindah ke tugas berikutnya.
@@ -321,7 +359,7 @@ Sebelum menulis rencana atau menyentuh kode, identifikasi domain pekerjaan dan b
 3. **Kondisi Bersih**: Repositori harus selalu dalam kondisi *runnable* dan *clean* di setiap titik commit git.
 ---
 
-## 13. Pedoman Standarisasi Dokumen DOCX & Tipografi
+## 14. Pedoman Standarisasi Dokumen DOCX & Tipografi
 
 ### A. Integritas Tipografi & Alignment (Anti-Stretching Rule)
 1. **Dilarang Karakter `\n` pada Paragraf Justified**:
@@ -351,7 +389,7 @@ Sebelum menulis rencana atau menyentuh kode, identifikasi domain pekerjaan dan b
 
 ---
 
-## 14. Batasan Keamanan & Eksekusi Eksternal (Strict Safety Boundaries)
+## 15. Batasan Keamanan & Eksekusi Eksternal (Strict Safety Boundaries)
 
 1. **Larangan `git push`**:
    - Agen **DILARANG KERAS** menjalankan `git push` atau mem-push kode ke remote repositori git dalam situasi apa pun.

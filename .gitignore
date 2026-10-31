@@ -13,3 +13,7 @@ wheels/
 !.env.example
 *.download
 .pytest_cache/
+
+# Local knowledge graph caches
+graphify-out/.graphify_*
+graphify-out/cache/
