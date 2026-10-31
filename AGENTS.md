@@ -345,8 +345,16 @@ Sebelum menulis rencana atau menyentuh kode, identifikasi domain pekerjaan dan b
 1. **Larangan `git push`**:
    - Agen **DILARANG KERAS** menjalankan `git push` atau mem-push kode ke remote repositori git dalam situasi apa pun.
    - Semua commit git bersifat lokal. Operasi push ke remote hanya boleh dijalankan secara manual oleh pengguna.
-2. **Larangan `npx supabase db push`**:
-   - Alur migrasi Supabase resmi proyek ini menggunakan `npx supabase db push`.
-   - Namun, agen **DILARANG KERAS** mengeksekusi `npx supabase db push`, `npx supabase db reset`, atau mengeksekusi skrip migrasi langsung ke basis data remote Supabase.
-   - Agen hanya bertugas menulis dan memvalidasi berkas migrasi SQL di direktori `web/supabase/migrations/`.
-   - Eksekusi `npx supabase db push` ke database remote **HANYA BOLEH DIJALANKAN OLEH PENGGUNA (USER ONLY)** demi keamanan data dan integritas rekam medis.
+2. **Prosedur Pembuatan & Eksekusi Migrasi Basis Data Supabase**:
+   - **Pembuatan File Migrasi oleh Agen**:
+     - Setiap kali ada kebutuhan perubahan skema basis data, agen **WAJIB** membuat berkas migrasi baru menggunakan Supabase CLI:
+       `npx --prefix web supabase migration new <nama_migrasi>`
+       (atau format timestamp standar pada folder `web/supabase/migrations/`).
+     - Seluruh query SQL wajib menerapkan prinsip non-destruktif (`IF NOT EXISTS`, aman terhadap data yang sedang berjalan).
+   - **Audit Wajib Sebelum Meminta User Push**:
+     - Sebelum meminta pengguna menjalankan push, agen **WAJIB memverifikasi ulang seluruh sintaks SQL yang terbentuk**.
+     - Pastikan tidak ada query aneh, tidak ada potensi kehilangan data penting (`DROP TABLE`, `DROP COLUMN`, `TRUNCATE`, dll.), dan struktur backward-compatible.
+     - Agen wajib memaparkan rincian dan jaminan keamanan SQL tersebut kepada pengguna.
+   - **Larangan Eksekusi `db push` oleh Agen**:
+     - Agen **DILARANG KERAS** mengeksekusi `npx supabase db push`, `npx supabase db reset`, atau mengeksekusi migrasi langsung ke basis data remote.
+     - Perintah `npx supabase db push` **HANYA BOLEH DIJALANKAN SECARA MANUAL OLEH PENGGUNA (USER ONLY)**.
