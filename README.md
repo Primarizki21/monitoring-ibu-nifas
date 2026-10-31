@@ -25,14 +25,6 @@ Sistem menghubungkan **3 Rumah Sakit Rujukan** (RSUD Dr. Soetomo, RSUD dr. Moham
 - **Pedoman Aturan Kerja & Standar Teknis**:  
   Lihat [`AGENTS.md`](AGENTS.md) untuk dokumentasi lengkap variabel, matriks klinis, dan aturan commit repositori.
 
-### Status Kesiapan Rekayasa Sistem
-| Fase Milestone | Cakupan Pekerjaan | Status |
-|---|---|---|
-| **M1: Desain & Spesifikasi** | Project Charter, RAB v2, Matriks KIA, Flowchart ANSI/ISO | **SELESAI (100%)** ✅ |
-| **M2: Backend Core & Engine** | FastAPI, SQLModel, Triage KIA, APScheduler, Seeder 13 Faskes | **SELESAI (100% Lulus Uji)** ✅ |
-| **M3: PWA Frontend UI** | Dashboard Triase Bidan, Registrasi Pasien, Panel Dinkes | **NEXT SPRINT (Pending)** ⏳ |
-| **M4: Pra-Deployment Lapangan** | Verifikasi WABA Meta, Provisi VPS Biznet GIO, Domain & SSL | **Fase M0 Lapangan** 📋 |
----
 
 ## 2. Prinsip Rekayasa Sistem (Core Principles)
 
