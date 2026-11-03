@@ -1,18 +1,10 @@
 [project]
 name = "pengmas-nifas"
 version = "0.1.0"
-description = "Add your description here"
+description = "Generator dokumen & diagram Project Charter SIM-NIFAS Surabaya"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "apscheduler>=3.11.3",
-    "fastapi>=0.142.2",
-    "httpx>=0.28.1",
     "matplotlib>=3.9.0",
-    "psycopg[binary]>=3.3.6",
-    "pydantic>=2.13.5",
-    "pydantic-settings>=2.15.0",
     "python-docx>=1.2.0",
-    "sqlmodel>=0.0.47",
-    "uvicorn>=0.54.0",
 ]
