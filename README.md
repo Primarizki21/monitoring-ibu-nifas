@@ -192,20 +192,23 @@ make setup
 ```
 > Perintah ini menyalin template `web/.env.example` menjadi `web/.env.local` dan mengunduh dependensi npm.
 
-### Langkah 2: Konfigurasi Kredensial Supabase
-Buka file `web/.env.local` dan isi kredensial proyek Supabase Anda:
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJh...
-SUPABASE_SERVICE_ROLE_KEY=eyJh...
+### Langkah 2: Konfigurasi `web/.env.local`
 
-# Opsional: Token WhatsApp Gateway (Fonnte)
-FONNTE_TOKEN=
+Hanya 7 variabel. Tiga wajib, tiga opsional, satu khusus pengujian lokal. Semua diisi manual — tidak ada yang di-generate sistem.
 
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-CRON_SECRET=sim_nifas_cron_secret_2026
-AKUN_UJI_PASSWORD=Uji-VPB-hlJC
-```
+| Variabel | Wajib | Dari mana | Catatan |
+|---|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Ya | Supabase Dashboard → project → **Project Settings → Data API** (Project URL) | Bentuk `https://<ref>.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Ya | **Project Settings → API Keys → publishable** (nama lama: anon) | Publik, ikut ke bundle browser |
+| `SUPABASE_SERVICE_ROLE_KEY` | Ya | **Project Settings → API Keys → secret** (nama lama: service_role) | **Hanya server**; jangan pernah ditampilkan di browser |
+| `NEXT_PUBLIC_APP_URL` | Ya | Tentukan sendiri | Dev: `http://localhost:3000`; produksi: domain final. Dipakai tautan `/visit/<token>` |
+| `FONNTE_TOKEN` | Tidak | [fonnte.com](https://fonnte.com) → Device → Token | Kosong = pesan tetap `QUEUED`, retry tidak terpakai |
+| `CRON_SECRET` | Tidak | Generate sendiri: `openssl rand -hex 32` | Harus sama dengan Supabase Vault (`cron_secret`) bila cron diaktifkan. Kosong = `/api/cron` selalu 401 |
+| `AKUN_UJI_PASSWORD` | Tidak | Tentukan sendiri | Hanya dibaca `scripts/buat-akun-uji.mjs` untuk 4 akun uji |
+
+> Jangan menyalin nilai contoh dari dokumentasi mana pun. Kunci Supabase hanya berlaku untuk project masing-masing; `CRON_SECRET` dan `AKUN_UJI_PASSWORD` kamu buat sendiri.
+>
+> Variabel `DEPLOY_*` dan `NEXT_PUBLIC_SUPABASE_*` di GitHub **tidak perlu diisi selama development**. Daftarnya ada di §13 dan baru relevan saat deploy.
 
 ### Langkah 3: Setup Skema Basis Data di Supabase
 Terapkan berkas migrasi database pada folder `web/supabase/migrations/` dan data awal `web/supabase/seed.sql` ke database Supabase Anda:
@@ -356,6 +359,15 @@ make docs
 ## 13. CI/CD & Deployment
 
 Pipeline: **`.github/workflows/ci.yml`** — `quality` (typecheck, lint, build) → `container` (image Docker, push ke GHCR) → `deploy` (VPS + smoke test). PR berhenti setelah `container` tanpa push; `main` mendorong image bertag SHA dan `latest`.
+
+**Fase development:** job `deploy` **nonaktif** secara default (butuh repository variable `DEPLOY_ENABLED=true`). Tidak perlu VPS, Docker, atau konfigurasi GitHub apa pun untuk mengembangkan fitur — cukup `make dev`. Target deploy masih terbuka; VPS Biznet GIO adalah salah satu opsi, bukan keharusan.
+
+| Opsi target | Kelebihan | Konsekuensi |
+|---|---|---|
+| Vercel | Nol konfigurasi server, preview per PR, cron bawaan | Biaya, data keluar Singapura/US untuk build |
+| VPS (compose yang sudah ada) | Kontrol penuh, UU PDP lokal, biaya tetap | Perlu setup SSH, GHCR login, reverse proxy + TLS |
+
+Jika memilih Vercel, job `container`/`deploy` di workflow bisa dihapus; build tetap berjalan di Vercel sendiri.
 
 ### Prasyarat VPS (sekali)
 
