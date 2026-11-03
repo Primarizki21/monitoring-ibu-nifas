@@ -19,3 +19,6 @@ graphify-out/
 
 # Dokumen arah kerja lokal (jangan di-push)
 /PLAN.md
+
+# Konfigurasi OMP lokal per-project (MCP selection)
+/.omp/
