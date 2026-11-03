@@ -110,12 +110,10 @@ pengmas-rs-surabaya/
 │   ├── supabase/        # Skema basis data PostgreSQL, migrasi bertahap, fungsi RLS, dan seed data
 │   ├── scripts/         # Skrip pembuatan akun nakes uji per faskes
 │   └── e2e/             # Pengujian end-to-end terautomasi dengan Playwright
-├── app/                 # Modul Engine Riset & Bot WA KIA (FastAPI, SQLModel, Triage Engine, APScheduler)
 ├── docs/                # Dokumen Spesifikasi, PRD SIM-NIFAS, Project Charter, dan Flowchart
 ├── tools/report_docs/   # Toolchain generator dokumen formal DOCX & render diagram alir 300 DPI
-├── tests/               # Rangkaian uji otomatis backend Python (smoke test)
 ├── Makefile             # Otomasi alur kerja: setup, dev, build, seed-users, test-e2e, docs
-└── docker-compose.yml   # Kontainer basis data lokal pendukung
+└── docker-compose.yml   # Menjalankan aplikasi web dalam kontainer (Supabase tetap hosted)
 ```
 
 ---
@@ -141,8 +139,6 @@ Platform operasional web SIM-NIFAS menggunakan **Supabase (PostgreSQL 16)** deng
 2. **Database Triggers**: Kalkulasi batas waktu SLA ($T_{\text{deadline}} = T_0 + 48\text{ jam}$), penerbitan token, dan kalkulasi triase tanda bahaya dieksekusi secara instan di level database.
 3. **RPC Function (`get_dashboard_analytics`)**: Seluruh 10 indikator kinerja nifas dihitung langsung oleh mesin PostgreSQL, mengeliminasi masalah performa query N+1 pada dashboard pimpinan.
 4. **Supabase Realtime**: Menyebarkan sinyal peringatan bahaya (*Red Alert*) seketika ke antarmuka web tanpa perlu memuat ulang halaman (*polling*).
-
-*(Catatan: Modul Python/SQLModel di folder `app/` dipertahankan sebagai modul riset pelengkap untuk evaluasi bot KIA interaktif).*
 
 ---
 
@@ -196,27 +192,33 @@ make setup
 ```
 > Perintah ini menyalin template `web/.env.example` menjadi `web/.env.local` dan mengunduh dependensi npm.
 
-### Langkah 2: Konfigurasi Kredensial Supabase
-Buka file `web/.env.local` dan isi kredensial proyek Supabase Anda:
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJh...
-SUPABASE_SERVICE_ROLE_KEY=eyJh...
+### Langkah 2: Konfigurasi `web/.env.local`
 
-# Opsional: Token WhatsApp Gateway (Fonnte)
-FONNTE_TOKEN=
+Hanya 7 variabel. Tiga wajib, tiga opsional, satu khusus pengujian lokal. Semua diisi manual — tidak ada yang di-generate sistem.
 
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-CRON_SECRET=sim_nifas_cron_secret_2026
-AKUN_UJI_PASSWORD=Uji-VPB-hlJC
-```
+| Variabel | Wajib | Dari mana | Catatan |
+|---|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Ya | Supabase Dashboard → project → **Project Settings → Data API** (Project URL) | **Bukan** "REST URL" (`.../rest/v1`) — cukup `https://<ref>.supabase.co`. Validasi menolak URL ber-path |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Ya | **Project Settings → API Keys → publishable** (nama lama: anon) | Publik, ikut ke bundle browser |
+| `SUPABASE_SERVICE_ROLE_KEY` | Ya | **Project Settings → API Keys → secret** (nama lama: service_role) | **Hanya server**; jangan pernah ditampilkan di browser |
+| `NEXT_PUBLIC_APP_URL` | Ya | Tentukan sendiri | Dev: `http://localhost:3000`; produksi: domain final. Dipakai tautan `/visit/<token>` |
+| `FONNTE_TOKEN` | Tidak | [fonnte.com](https://fonnte.com) → Device → Token | Kosong = pesan tetap `QUEUED`, retry tidak terpakai |
+| `CRON_SECRET` | Tidak | Generate sendiri: `openssl rand -hex 32` | Harus sama dengan Supabase Vault (`cron_secret`) bila cron diaktifkan. Kosong = `/api/cron` selalu 401 |
+| `AKUN_UJI_PASSWORD` | Tidak | Tentukan sendiri | Hanya dibaca `scripts/buat-akun-uji.mjs` untuk 4 akun uji |
+
+> Jangan menyalin nilai contoh dari dokumentasi mana pun. Kunci Supabase hanya berlaku untuk project masing-masing; `CRON_SECRET` dan `AKUN_UJI_PASSWORD` kamu buat sendiri.
+>
+> Variabel `DEPLOY_*` dan `NEXT_PUBLIC_SUPABASE_*` di GitHub **tidak perlu diisi selama development**. Daftarnya ada di §13 dan baru relevan saat deploy.
 
 ### Langkah 3: Setup Skema Basis Data di Supabase
 Terapkan berkas migrasi database pada folder `web/supabase/migrations/` dan data awal `web/supabase/seed.sql` ke database Supabase Anda:
 - **Cara 1 (Supabase CLI - Direkomendasikan)**:
   ```bash
-  npx --prefix web supabase db push --include-seed
+  cd web
+  npx supabase link --project-ref <project-ref>   # sekali saja
+  npx supabase db push --include-seed
   ```
+  > `--prefix web` **tidak** memindahkan direktori kerja: CLI mencari folder `supabase/` relatif terhadap cwd. Jalankan dari `web/`, atau dari root dengan `npx --prefix web supabase --workdir web db push --include-seed`.
 - **Cara 2 (SQL Editor Manual)**: Jalankan berkas SQL di dalam `web/supabase/migrations/` secara berurutan sesuai urutan nama file, lalu akhiri dengan `web/supabase/seed.sql`.
 
 ### Langkah 4: Membuat Akun Tenaga Kesehatan Uji
@@ -269,9 +271,9 @@ Semua akun menggunakan kata sandi bawaan yang dikonfigurasikan pada `AKUN_UJI_PA
 
 ---
 
-## 9. Rangkaian Pengujian Terautomasi (Dual-Layer Testing)
+## 9. Rangkaian Pengujian Terautomasi
 
-Repositori dilengkapi pengujian menyeluruh pada dua layer sistem:
+Repositori dilengkapi pengujian pada dua layer sistem:
 
 ### A. Uji End-to-End Web Platform (Playwright)
 Menguji skenario operasional nyata pada database Supabase: alur login nakes, pengisian KRS oleh Bidan RS, laporan kunjungan bertanda bahaya oleh Bidan Kelurahan, kemunculan Red Alert di dashboard Kepala Puskesmas, dan pergantian tab tanpa muat ulang oleh Dinkes:
@@ -279,15 +281,11 @@ Menguji skenario operasional nyata pada database Supabase: alur login nakes, pen
 make test-e2e
 ```
 
-### B. Uji Engine Backend Python (Smoke Test)
-Menguji 9 skenario inti modul backend Python dan evaluasi triase deterministik:
+### B. Pemeriksaan Statis & Build Produksi
 ```bash
-uv run python tests/smoke_test.py
-```
-
-### C. Pemeriksaan Linter Frontend
-```bash
-make lint
+make lint                      # ESLint
+npm --prefix web exec tsc --noEmit   # TypeScript
+make build                     # next build
 ```
 
 ---
@@ -357,3 +355,58 @@ make docs
 1. **Bebas Kredensial Produksi**: Repositori ini bebas dari kunci rahasia, nomor telepon pribadi, dan token produksi. Seluruh konfigurasi kredensial dikelola melalui file lingkungan lokal (`web/.env.local`) yang diabaikan oleh git (`.gitignore`).
 2. **Data Sintetis Pengujian**: Seluruh data nama pasien, NIK, dan nomor telepon yang tercantum dalam pengujian atau contoh adalah data sintetis (*dummy*) untuk simulasi teknis.
 3. **Kepatuhan Privasi**: Sistem tidak mengirimkan data identitas pasien ke layanan publik atau model kecerdasan buatan eksternal tanpa enkripsi dan persetujuan resmi.
+
+
+---
+
+## 13. CI/CD & Deployment
+
+Pipeline: **`.github/workflows/ci.yml`** — `quality` (typecheck, lint, build) → `container` (image Docker, push ke GHCR) → `deploy` (VPS + smoke test). PR berhenti setelah `container` tanpa push; `main` mendorong image bertag SHA dan `latest`.
+
+**Fase development:** job `deploy` **nonaktif** secara default (butuh repository variable `DEPLOY_ENABLED=true`). Tidak perlu VPS, Docker, atau konfigurasi GitHub apa pun untuk mengembangkan fitur — cukup `make dev`. Target deploy masih terbuka; VPS Biznet GIO adalah salah satu opsi, bukan keharusan.
+
+| Opsi target | Kelebihan | Konsekuensi |
+|---|---|---|
+| Vercel | Nol konfigurasi server, preview per PR, cron bawaan | Biaya, data keluar Singapura/US untuk build |
+| VPS (compose yang sudah ada) | Kontrol penuh, UU PDP lokal, biaya tetap | Perlu setup SSH, GHCR login, reverse proxy + TLS |
+
+Jika memilih Vercel, job `container`/`deploy` di workflow bisa dihapus; build tetap berjalan di Vercel sendiri.
+
+### Prasyarat VPS (sekali)
+
+```bash
+# docker-compose.yml + isi web/.env.local sudah ada di DEPLOY_PATH
+docker login ghcr.io            # agar `docker compose pull` bisa menarik image privat
+```
+
+### Repository variables & secrets
+
+| Nama | Tipe | Isi |
+|---|---|---|
+| `DEPLOY_ENABLED` | variable | `true` untuk mengaktifkan job deploy; kosong = deploy dilewati |
+| `APP_URL` | variable | `https://domain-aplikasi` (dipakai environment URL + smoke test) |
+| `NEXT_PUBLIC_SUPABASE_URL` | variable | URL project Supabase (di-inline saat build image) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | variable | Kunci anon Supabase (publik, di-inline saat build image) |
+| `DEPLOY_HOST` | secret | IP/host VPS |
+| `DEPLOY_USER` | secret | User SSH |
+| `DEPLOY_SSH_KEY` | secret | Private key ed25519 |
+| `DEPLOY_KNOWN_HOSTS` | secret | Output `ssh-keyscan -H <host>` (mencegah MITM) |
+| `DEPLOY_PATH` | secret | Direktori berisi `docker-compose.yml` dan `web/.env.local` |
+
+`CRON_SECRET` dan kredensial Supabase **tidak** diambil dari GitHub; isi di `web/.env.local` pada VPS. Nilai `CRON_SECRET` harus sama dengan secret di Supabase Vault (`cron_schedule`).
+
+### Rollback
+
+Deploy manual dengan tag SHA sebelumnya (image lama tetap tersimpan di GHCR):
+
+```bash
+# GitHub → Actions → CI/CD → Run workflow → image_tag = <sha-sebelumnya>
+```
+
+Setara manual di VPS:
+
+```bash
+WEB_IMAGE=ghcr.io/<owner>/<repo>:<sha-lama> docker compose --env-file web/.env.local up -d --no-build web
+```
+
+Rollback database memakai migrasi forward baru (tidak ada `down`); jangan mengubah migrasi yang sudah berjalan.

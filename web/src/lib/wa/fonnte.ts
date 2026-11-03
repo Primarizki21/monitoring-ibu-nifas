@@ -1,5 +1,6 @@
 // Klien Fonnte (https://docs.fonnte.com/api-send-message/).
 // Diganti adapter Meta Cloud API nanti cukup dengan mengganti fungsi ini.
+import { env } from "@/lib/env";
 
 export type HasilKirim = { ok: true; respons: string } | { ok: false; respons: string; bisaDiulang: boolean };
 
@@ -7,7 +8,7 @@ export type HasilKirim = { ok: true; respons: string } | { ok: false; respons: s
 const GAGAL_PERMANEN = ["target invalid", "input invalid"];
 
 export async function kirimWa(nomor: string, pesan: string): Promise<HasilKirim> {
-  const token = process.env.FONNTE_TOKEN;
+  const token = env().FONNTE_TOKEN;
   if (!token) return { ok: false, respons: "FONNTE_TOKEN belum diisi", bisaDiulang: true };
 
   const body = new FormData();

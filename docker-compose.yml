@@ -1,21 +1,28 @@
 services:
-  db:
-    image: postgres:16-alpine
-    container_name: nifas_postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: nifas_user
-      POSTGRES_PASSWORD: nifas_secret_password
-      POSTGRES_DB: nifas_db
+  web:
+    image: ${WEB_IMAGE:-pengmas-nifas-web:local}
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    env_file:
+      - ./web/.env.local
     ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - "3000:3000"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nifas_user -d nifas_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  postgres_data:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 512M

@@ -1,19 +1,16 @@
 import { after, NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
+import { galat } from "@/lib/http";
 import { kunjunganSchema } from "@/lib/validasi";
 import { waEmergency } from "@/lib/wa/template";
 import { prosesAntreanWa } from "@/lib/wa/worker";
-
-function gagal(status: number, message: string, extra: object = {}) {
-  return NextResponse.json({ success: false, message, ...extra }, { status });
-}
 
 // PRD 9.3 — simpan laporan kunjungan rumah. Status SLA & triase dihitung trigger database.
 export async function POST(req: NextRequest) {
   const parsed = kunjunganSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
-    return gagal(422, "Data tidak valid.", { errors: z.flattenError(parsed.error).fieldErrors });
+    return galat(422, "validation_error", "Data tidak valid.", { errors: z.flattenError(parsed.error).fieldErrors });
   }
   const { token_kunjungan, ...laporan } = parsed.data;
   const db = createAdminClient();
@@ -23,15 +20,15 @@ export async function POST(req: NextRequest) {
     .select("id, nama_ibu, alamat_lengkap, no_whatsapp_ibu, puskesmas_id, bidan_kelurahan_id, token_expires_at")
     .eq("token_kunjungan", token_kunjungan)
     .maybeSingle();
-  if (!d) return gagal(404, "Tautan kunjungan tidak ditemukan.");
-  if (new Date(d.token_expires_at) < new Date()) return gagal(410, "Tautan kunjungan sudah kadaluarsa (lebih dari 7 hari).");
+  if (!d) return galat(404, "not_found", "Tautan kunjungan tidak ditemukan.");
+  if (new Date(d.token_expires_at) < new Date()) return galat(410, "gone", "Tautan kunjungan sudah kadaluarsa (lebih dari 7 hari).");
 
   // Token hanya bisa dipakai submit sekali: discharge_id unik di tr_home_visit (PRD 7.3).
   const { error } = await db.from("tr_home_visit").insert({ discharge_id: d.id, ...laporan });
-  if (error?.code === "23505") return gagal(409, "Laporan kunjungan untuk pasien ini sudah pernah dikirim.");
+  if (error?.code === "23505") return galat(409, "conflict", "Laporan kunjungan untuk pasien ini sudah pernah dikirim.");
   if (error) {
     console.error("insert tr_home_visit", error);
-    return gagal(500, "Gagal menyimpan laporan kunjungan.");
+    return galat(500, "internal_error", "Gagal menyimpan laporan kunjungan.");
   }
 
   const { data: hasil } = await db
@@ -53,7 +50,7 @@ export async function POST(req: NextRequest) {
       status_kesehatan: hasil?.status_kesehatan,
       is_emergency_triggered: Boolean(hasil?.is_emergency),
     },
-  });
+  }, { headers: { "cache-control": "no-store" } });
 }
 
 type Db = ReturnType<typeof createAdminClient>;

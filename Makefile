@@ -1,4 +1,4 @@
-.PHONY: help setup dev build start install seed-users lint test-e2e charts docs clean
+.PHONY: help setup dev build start install seed-users db-push lint typecheck test-e2e docker-build docker-up docker-down charts docs clean
 
 help:
 	@echo "======================================================================"
@@ -8,6 +8,7 @@ help:
 	@echo "  make setup        - Siapkan web/.env.local dan install dependensi npm"
 	@echo "  (Lalu isi kredensial Supabase Anda di file web/.env.local)"
 	@echo "  make seed-users   - Buat 4 akun uji faskes ke database Supabase"
+	@echo "  make db-push      - Terapkan migrasi Supabase (jalankan dari root, cwd benar)"
 	@echo ""
 	@echo "Alur Menjalankan Aplikasi:"
 	@echo "  make dev          - Jalankan dev server Next.js (http://localhost:3000)"
@@ -16,7 +17,13 @@ help:
 	@echo ""
 	@echo "Pengujian & Kualitas Kode:"
 	@echo "  make lint         - Jalankan linter ESLint pada folder web/"
+	@echo "  make typecheck    - Cek tipe TypeScript (tsc --noEmit)"
 	@echo "  make test-e2e     - Jalankan automated E2E test Playwright"
+	@echo ""
+	@echo "Kontainer (Supabase tetap hosted):"
+	@echo "  make docker-build - Bangun image web (multi-stage, non-root)"
+	@echo "  make docker-up    - Jalankan web di http://localhost:3000"
+	@echo "  make docker-down  - Hentikan kontainer web"
 	@echo ""
 	@echo "Dokumentasi & Utilitas Lain:"
 	@echo "  make charts       - Render ulang gambar diagram alir 300 DPI (Python)"
@@ -48,8 +55,23 @@ install:
 seed-users:
 	@cd web && node --env-file=.env.local scripts/buat-akun-uji.mjs
 
+db-push:
+	cd web && npx supabase db push --linked
+
 lint:
 	npm --prefix web run lint
+
+typecheck:
+	npm --prefix web exec tsc --noEmit
+
+docker-build:
+	docker compose --env-file web/.env.local build
+
+docker-up:
+	docker compose --env-file web/.env.local up -d --build
+
+docker-down:
+	docker compose --env-file web/.env.local down
 
 test-e2e:
 	npm --prefix web exec playwright test

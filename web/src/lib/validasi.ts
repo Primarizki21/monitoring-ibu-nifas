@@ -1,5 +1,17 @@
 import { z } from "zod";
 
+export const TANGGAL = /^\d{4}-\d{2}-\d{2}$/;
+export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Rentang filter dashboard: tanggal WIB, maksimal 366 hari agar RPC tetap ringan.
+export const filterTanggalSchema = z
+  .object({ mulai: z.string().regex(TANGGAL), selesai: z.string().regex(TANGGAL) })
+  .refine((f) => f.mulai <= f.selesai, { message: "Tanggal mulai harus sebelum tanggal selesai", path: ["selesai"] })
+  .refine(
+    (f) => Date.parse(f.selesai) - Date.parse(f.mulai) <= 366 * 86_400_000,
+    { message: "Rentang maksimal 366 hari", path: ["selesai"] },
+  );
+
 // Normalisasi 08xx / 628xx / +628xx -> +628xx
 export const nomorWhatsapp = z
   .string()

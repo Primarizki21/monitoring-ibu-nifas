@@ -1,3 +1,4 @@
+import { env } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/server";
 import { kirimWa } from "./fonnte";
 import { waNomorPasienGagal } from "./template";
@@ -24,7 +25,7 @@ export type RingkasanWorker = { diproses: number; terkirim: number; diulang: num
 export async function prosesAntreanWa(batas = 20, db: Db = createAdminClient()): Promise<RingkasanWorker> {
   const ringkasan: RingkasanWorker = { diproses: 0, terkirim: 0, diulang: 0, gagal: 0 };
   // Gateway belum dikonfigurasi: biarkan pesan tetap QUEUED agar tidak habis jatah retry-nya.
-  if (!process.env.FONNTE_TOKEN) return ringkasan;
+  if (!env().FONNTE_TOKEN) return ringkasan;
 
   const { data, error } = await db.rpc("ambil_antrean_wa", { p_batas: batas });
   if (error) throw error;

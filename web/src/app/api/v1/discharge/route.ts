@@ -2,6 +2,8 @@ import { after, NextResponse, type NextRequest } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { env } from "@/lib/env";
+import { asalSah, galat } from "@/lib/http";
 import { dischargeSchema } from "@/lib/validasi";
 import type { Profil } from "@/lib/auth";
 import { waAssign01, waEduPasien } from "@/lib/wa/template";
@@ -11,7 +13,8 @@ import { prosesAntreanWa } from "@/lib/wa/worker";
 async function klienPengguna(req: NextRequest) {
   const auth = req.headers.get("authorization");
   if (auth?.startsWith("Bearer ")) {
-    return createSupabaseClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    const { NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY } = env();
+    return createSupabaseClient(NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: auth } },
       auth: { persistSession: false },
     });
@@ -19,14 +22,13 @@ async function klienPengguna(req: NextRequest) {
   return createClient();
 }
 
-function gagal(status: number, message: string, extra: object = {}) {
-  return NextResponse.json({ success: false, message, ...extra }, { status });
-}
-
 export async function POST(req: NextRequest) {
+  // Mutasi ber-cookie harus dari origin sendiri; klien Bearer dikecualikan.
+  if (!asalSah(req)) return galat(403, "forbidden", "Permintaan lintas situs ditolak.");
+
   const parsed = dischargeSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
-    return gagal(422, "Data tidak valid.", { errors: z.flattenError(parsed.error).fieldErrors });
+    return galat(422, "validation_error", "Data tidak valid.", { errors: z.flattenError(parsed.error).fieldErrors });
   }
   const input = parsed.data;
 
@@ -39,11 +41,12 @@ export async function POST(req: NextRequest) {
       ? Promise.resolve({ data: null })
       : createAdminClient().rpc("cek_krs_terakhir", { p_nik: input.nik }).maybeSingle<{ discharge_id: string; waktu_krs: string }>(),
   ]);
-  if (!profil?.id) return gagal(401, "Sesi tidak valid. Silakan masuk kembali.");
-  if (profil.role !== "BIDAN_RS") return gagal(403, "Hanya Bidan RS yang dapat menginput data pemulangan.");
+  if (!profil?.id) return galat(401, "unauthorized", "Sesi tidak valid. Silakan masuk kembali.");
+  if (profil.role !== "BIDAN_RS") return galat(403, "forbidden", "Hanya Bidan RS yang dapat menginput data pemulangan.");
 
   if (sebelumnya) {
-    return gagal(409, "Pasien dengan NIK ini baru saja dipulangkan.", {
+    return galat(409, "conflict", "Pasien dengan NIK ini baru saja dipulangkan.", {
+      // Kode domain dipertahankan di level atas untuk dialog readmission di formulir KRS.
       code: "KEMUNGKINAN_READMISSION",
       data: { waktu_krs_sebelumnya: sebelumnya.waktu_krs },
     });
@@ -56,7 +59,7 @@ export async function POST(req: NextRequest) {
     .single();
   if (error || !discharge) {
     console.error("insert tr_discharge", error);
-    return gagal(500, "Gagal menyimpan data pemulangan.");
+    return galat(500, "internal_error", "Gagal menyimpan data pemulangan.");
   }
 
   // Antre & kirim WA setelah respons dikembalikan (target < 1 menit, PRD 1.4); cron menjadi cadangan.
@@ -93,18 +96,25 @@ type DischargeBaru = {
 // Masukkan WA-ASSIGN-01 & WA-EDU-PASIEN ke antrean log_notifikasi_wa; pengiriman oleh worker WA.
 async function antrekanNotifikasi(d: DischargeBaru, input: z.output<typeof dischargeSchema>, rsId: string) {
   const admin = createAdminClient();
-  const [{ data: puskesmas }, { data: rs }, { data: nakes }] = await Promise.all([
+  // Dua query terpisah, bukan filter string `.or()` yang menggabungkan nilai dari database.
+  const [{ data: puskesmas }, { data: rs }, { data: bidan }, { data: kapus }] = await Promise.all([
     admin.from("m_puskesmas").select("nama_puskesmas").eq("id", d.puskesmas_id).single(),
     admin.from("m_rumah_sakit").select("nama_rs").eq("id", rsId).single(),
+    d.bidan_kelurahan_id
+      ? admin
+          .from("users")
+          .select("nama_lengkap, no_whatsapp")
+          .eq("id", d.bidan_kelurahan_id)
+          .eq("is_active", true)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
     admin
       .from("users")
-      .select("id, nama_lengkap, no_whatsapp, role")
-      .eq("is_active", true)
-      .or(`id.eq.${d.bidan_kelurahan_id ?? "00000000-0000-0000-0000-000000000000"},and(role.eq.KEPALA_PUSKESMAS,puskesmas_id.eq.${d.puskesmas_id})`),
+      .select("no_whatsapp")
+      .eq("role", "KEPALA_PUSKESMAS")
+      .eq("puskesmas_id", d.puskesmas_id)
+      .eq("is_active", true),
   ]);
-
-  const bidan = nakes?.find((u) => u.id === d.bidan_kelurahan_id);
-  const kapus = nakes?.filter((u) => u.role === "KEPALA_PUSKESMAS") ?? [];
   const faskesTujuan = input.faskes_kunjungan_ulang === "RS" ? rs?.nama_rs : puskesmas?.nama_puskesmas;
 
   const pesanTugas = waAssign01({
@@ -120,12 +130,12 @@ async function antrekanNotifikasi(d: DischargeBaru, input: z.output<typeof disch
     deadline_sla: d.deadline_sla,
     jadwal_kunjungan_ulang: input.jadwal_kunjungan_ulang,
     faskes_tujuan: faskesTujuan ?? "-",
-    url_kunjungan_token: `${process.env.NEXT_PUBLIC_APP_URL}/visit/${d.token_kunjungan}`,
+    url_kunjungan_token: `${env().NEXT_PUBLIC_APP_URL}/visit/${d.token_kunjungan}`,
   });
 
   const penerimaTugas = [
     ...(bidan ? [{ nomor: bidan.no_whatsapp, peran: "BIDAN_KELURAHAN" }] : []),
-    ...kapus.map((k) => ({ nomor: k.no_whatsapp, peran: "KEPALA_PUSKESMAS" })),
+    ...(kapus ?? []).map((k) => ({ nomor: k.no_whatsapp, peran: "KEPALA_PUSKESMAS" })),
   ];
 
   const sekarang = new Date().toISOString();
@@ -150,7 +160,7 @@ async function antrekanNotifikasi(d: DischargeBaru, input: z.output<typeof disch
         faskes_tujuan: faskesTujuan ?? "-",
         jadwal_kunjungan_ulang: input.jadwal_kunjungan_ulang,
         nama_bidan: bidan?.nama_lengkap ?? `di ${puskesmas?.nama_puskesmas ?? "Puskesmas"}`,
-        no_whatsapp_bidan: bidan?.no_whatsapp ?? kapus[0]?.no_whatsapp ?? "-",
+        no_whatsapp_bidan: bidan?.no_whatsapp ?? kapus?.[0]?.no_whatsapp ?? "-",
       }),
       next_retry_at: sekarang,
     },
