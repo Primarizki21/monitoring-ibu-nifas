@@ -1,16 +1,21 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const jakarta = Plus_Jakarta_Sans({
+// Font di-vendor lokal (woff2 latin, variable). Build tidak lagi bergantung
+// pada koneksi ke fonts.googleapis.com — penyebab build gagal acak di CI/Docker.
+const jakarta = localFont({
+  src: "./fonts/plus-jakarta-sans-latin.woff2",
   variable: "--font-jakarta",
-  subsets: ["latin"],
+  weight: "400 700",
+  display: "swap",
 });
 
-const bricolage = Bricolage_Grotesque({
+const bricolage = localFont({
+  src: "./fonts/bricolage-grotesque-latin.woff2",
   variable: "--font-bricolage",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: "500 700",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
