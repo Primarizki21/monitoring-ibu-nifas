@@ -392,7 +392,26 @@ Sebelum menulis rencana atau menyentuh kode, identifikasi domain pekerjaan dan b
    - Agen **DILARANG KERAS** menjalankan `git push` atau mem-push kode ke remote repositori git dalam situasi apa pun.
    - Agen **DILARANG** melakukan commit langsung di branch `main`. Seluruh pekerjaan wajib berada di branch fitur (lihat §13 Langkah 5 poin 0).
    - Semua commit git bersifat lokal. Operasi push, PR, dan merge ke `main` hanya boleh dijalankan secara manual oleh pengguna.
-2. **Prosedur Pembuatan & Eksekusi Migrasi Basis Data Supabase**:
+2. **Gerbang Kesiapan Push (Wajib Saat User Bertanya "Bisa Di-push?")**:
+   - Saat pengguna menanyakan apakah commit/branch siap di-push atau dibuat PR, agen **DILARANG** langsung menjawab "bisa". Agen **WAJIB** memeriksa dua hal berikut lebih dulu, dengan bukti nyata, bukan asumsi.
+   - **A. Keamanan**:
+     - `git status` bersih; tidak ada file kredensial ter-track (`.env`, `*.download`, `*.db`, key, service role).
+     - Pindai diff terhadap branch tujuan: `git diff <base>...HEAD` untuk pola rahasia (`sb_secret_`, `service_role`, token, `CRON_SECRET=`, password).
+     - Kunci rahasia hanya dipakai di server; tidak ada `NEXT_PUBLIC_*` yang memuat secret.
+     - Rute baru/berubah memiliki otorisasi (RLS/role) dan validasi input; tidak ada `console.log` data pasien.
+     - `.gitignore` masih menutup `.env*`, `PLAN.md`, dan artefak build.
+   - **B. Fungsionalitas**:
+     - Jalankan minimal: `npx tsc --noEmit`, `npm run lint`, `npm run build` di `web/`.
+     - Jalankan jalur yang berubah secara nyata (smoke test manual, curl endpoint, atau Playwright), bukan hanya "tidak error saat compile".
+     - Jika menyentuh Docker/CI: `docker compose config -q`, `docker compose build`, dan smoke container pada `/api/health`.
+     - Pastikan workflow CI valid (YAML ter-parse, job yang dipakai ada) dan diff sesuai tujuan (tidak ada perubahan tak terkait).
+   - **C. Kesiapan Remote**:
+     - Cek apakah `origin/<branch-tujuan>` sudah maju. Jika agen tidak punya akses (mis. SSH ditolak), **nyatakan eksplisit** dan minta pengguna menjalankan `git fetch`/`git rebase`.
+   - **D. Laporan & Instruksi**:
+     - Sajikan hasil dalam tabel periksa + bukti (perintah dan hasil ringkas) + daftar blocker bila ada.
+     - Hanya jika semua lolos, berikan perintah `git push` dan pembuatan PR kepada pengguna. Jika ada blocker, sebutkan dan jangan beri instruksi push.
+     - Agen **tetap tidak menjalankan** `git push`/PR; instruksi hanya untuk pengguna.
+3. **Prosedur Pembuatan & Eksekusi Migrasi Basis Data Supabase**:
    - **Pembuatan File Migrasi oleh Agen**:
      - Setiap kali ada kebutuhan perubahan skema basis data, agen **WAJIB** membuat berkas migrasi baru menggunakan Supabase CLI:
        `npx --prefix web supabase migration new <nama_migrasi>`
