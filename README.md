@@ -349,3 +349,49 @@ make docs
 1. **Bebas Kredensial Produksi**: Repositori ini bebas dari kunci rahasia, nomor telepon pribadi, dan token produksi. Seluruh konfigurasi kredensial dikelola melalui file lingkungan lokal (`web/.env.local`) yang diabaikan oleh git (`.gitignore`).
 2. **Data Sintetis Pengujian**: Seluruh data nama pasien, NIK, dan nomor telepon yang tercantum dalam pengujian atau contoh adalah data sintetis (*dummy*) untuk simulasi teknis.
 3. **Kepatuhan Privasi**: Sistem tidak mengirimkan data identitas pasien ke layanan publik atau model kecerdasan buatan eksternal tanpa enkripsi dan persetujuan resmi.
+
+
+---
+
+## 13. CI/CD & Deployment
+
+Pipeline: **`.github/workflows/ci.yml`** — `quality` (typecheck, lint, build) → `container` (image Docker, push ke GHCR) → `deploy` (VPS + smoke test). PR berhenti setelah `container` tanpa push; `main` mendorong image bertag SHA dan `latest`.
+
+### Prasyarat VPS (sekali)
+
+```bash
+# docker-compose.yml + isi web/.env.local sudah ada di DEPLOY_PATH
+docker login ghcr.io            # agar `docker compose pull` bisa menarik image privat
+```
+
+### Repository variables & secrets
+
+| Nama | Tipe | Isi |
+|---|---|---|
+| `DEPLOY_ENABLED` | variable | `true` untuk mengaktifkan job deploy; kosong = deploy dilewati |
+| `APP_URL` | variable | `https://domain-aplikasi` (dipakai environment URL + smoke test) |
+| `NEXT_PUBLIC_SUPABASE_URL` | variable | URL project Supabase (di-inline saat build image) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | variable | Kunci anon Supabase (publik, di-inline saat build image) |
+| `DEPLOY_HOST` | secret | IP/host VPS |
+| `DEPLOY_USER` | secret | User SSH |
+| `DEPLOY_SSH_KEY` | secret | Private key ed25519 |
+| `DEPLOY_KNOWN_HOSTS` | secret | Output `ssh-keyscan -H <host>` (mencegah MITM) |
+| `DEPLOY_PATH` | secret | Direktori berisi `docker-compose.yml` dan `web/.env.local` |
+
+`CRON_SECRET` dan kredensial Supabase **tidak** diambil dari GitHub; isi di `web/.env.local` pada VPS. Nilai `CRON_SECRET` harus sama dengan secret di Supabase Vault (`cron_schedule`).
+
+### Rollback
+
+Deploy manual dengan tag SHA sebelumnya (image lama tetap tersimpan di GHCR):
+
+```bash
+# GitHub → Actions → CI/CD → Run workflow → image_tag = <sha-sebelumnya>
+```
+
+Setara manual di VPS:
+
+```bash
+WEB_IMAGE=ghcr.io/<owner>/<repo>:<sha-lama> docker compose --env-file web/.env.local up -d --no-build web
+```
+
+Rollback database memakai migrasi forward baru (tidak ada `down`); jangan mengubah migrasi yang sudah berjalan.

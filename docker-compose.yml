@@ -1,5 +1,6 @@
 services:
   web:
+    image: ${WEB_IMAGE:-pengmas-nifas-web:local}
     build:
       context: ./web
       args:

@@ -64,7 +64,7 @@ docker-build:
 	docker compose --env-file web/.env.local build
 
 docker-up:
-	docker compose --env-file web/.env.local up -d
+	docker compose --env-file web/.env.local up -d --build
 
 docker-down:
 	docker compose --env-file web/.env.local down
