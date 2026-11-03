@@ -125,9 +125,10 @@ Sistem pemantauan kesehatan ibu nifas terautomasi berbasis **WhatsApp** dan **PW
    - **Pedoman Visual**: `docs/DRAWIO_STYLE_GUIDE.md` (Palet warna klinis resmi & aturan perutean koneksi 90° rigid).
    - **Aset Render Resolusi Tinggi (300 DPI)**: `docs/assets/flowchart_{1,2,3}_*.png` serta `docs/assets/flowchart_master.png`.
    - **Berkas Sumber Desain Draw.io**: `docs/Flowchart_1_manual.drawio` s/d `Flowchart_4.drawio` (Arsip visual pendukung).
-4. **Kode Sumber Backend & Pengujian Terautomasi**:
-   - **Aplikasi Backend**: Direktori `app/` (FastAPI v2.0, SQLModel, Triage Engine, APScheduler).
-   - **Rangkaian Uji Otomatis**: `tests/smoke_test.py` (9 pengujian end-to-end tanpa mock eksternal).
+4. **Kode Sumber Aplikasi Web & Pengujian Terautomasi**:
+   - **Aplikasi Web**: Direktori `web/` (Next.js 15 App Router, TypeScript, Supabase Postgres/Auth/Realtime/RLS, Tailwind v4).
+   - **Skema Basis Data**: `web/supabase/migrations/` (8 tabel, RLS, trigger SLA/triase, RPC agregasi dashboard).
+   - **Rangkaian Uji Otomatis**: `web/e2e/alur.spec.ts` (6 skenario Playwright pada Supabase nyata).
    - **Generator Laporan Formal**: `tools/report_docs/` (Automated DOCX builder berbasis standar OpenXML).
 ---
 
@@ -224,15 +225,16 @@ Sistem menerapkan template pesan deterministik terstruktur sesuai algoritma Buku
 
 ## 10. Spesifikasi Teknis & Infrastruktur Komputasi
 
-1. **Bahasa Pemrograman Python 3.12 & Astral uv**:
-   - Eksekusi deterministik dengan kecepatan dependency resolution tinggi melalui `uv`.
-2. **Framework Web & API**: **FastAPI (Asynchronous ASGI)**:
-   - Menangani webhook masuk dari Meta WhatsApp Cloud API dengan latensi sub-detik (<1 detik).
-3. **Basis Data**: **PostgreSQL 16 & Dual-Engine Fallback**:
-   - Standar relasional ACID untuk pencatatan rekam medis terenkripsi dan log triase multi-tenant.
-   - **Smart Fallback SQLite**: Sistem secara otomatis beralih ke SQLite lokal (`nifas_dev.db`) jika kontainer PostgreSQL Docker tidak aktif, memungkinkan testing lokal instan tanpa konfigurasi manual.
-4. **Konektivitas WhatsApp**: **Direct Meta WhatsApp Cloud API (Graph API v20+)**:
-   - Tanpa perantara pihak ketiga; memanfaatkan kuota gratis dan tarif utility resmi Meta.
+1. **Aplikasi Web**: **Next.js 15 (App Router, TypeScript)**:
+   - Satu-satunya backend aplikasi: Server Components, Server Actions, dan Route Handlers di `web/src/app/api/`.
+2. **Basis Data, Auth & Realtime**: **Supabase (PostgreSQL 16)**:
+   - Skema, trigger SLA/triase, fungsi RPC analitik, dan kebijakan RLS berada di `web/supabase/migrations/`.
+   - Klien service role hanya dipakai di server (`web/src/lib/supabase/server.ts`); browser memakai kunci anon + RLS.
+3. **API & Penjadwalan**:
+   - Endpoint: `/api/v1/{discharge,visit/[token],visit/submit,dashboard/analytics}`, `/api/cron`, `/api/health`.
+   - `/api/cron` dipanggil penjadwal eksternal (pg_cron/Vercel Cron) dengan `Authorization: Bearer <CRON_SECRET>`.
+4. **Konektivitas WhatsApp**: **Fonnte gateway** (`web/src/lib/wa/fonnte.ts`).
+   - Adaptor Meta Cloud API direncanakan; perbedaan tarif terhadap RAB dibahas di `PLAN.md` (lokal, tidak di-push).
 5. **Server Komputasi**: **VPS Biznet GIO NEO Lite MM 8.8 (8 vCPU / 8 GB RAM)**:
    - Data center lokal Surabaya/Jakarta untuk kepatuhan UU PDP No. 27/2022.
 6. **Penyimpanan Cadangan**: **Biznet GIO NEO Object Storage (S3-Compatible, ~20GB)**:
@@ -242,23 +244,11 @@ Sistem menerapkan template pesan deterministik terstruktur sesuai algoritma Buku
 
 ---
 
-## 11. Roadmap Implementasi & Status Kesiapan Software
+## 11. Roadmap & Status Kesiapan
 
-### A. Status Kesiapan Rekayasa Sistem (Software Milestones)
-| Milestone Rekayasa | Cakupan Kerja & Deliverables | Status Saat Ini |
-|---|---|---|
-| **M1: Desain & Spesifikasi Medis** | Project Charter, RAB v2, Matriks Pesan KF1-KF4, Flowchart ANSI/ISO, Style Guide. | **SELESAI (100%)** |
-| **M2: Backend Core & Engine Triase** | FastAPI, SQLModel 8 entitas, seeder 13 Faskes Surabaya, APScheduler, direct wa.me, 9 smoke tests. | **SELESAI (100% Lulus)** |
-| **M3: Progressive Web App (PWA)** | Dashboard antrean triase bidan, pendaftaran discharge planning, panel agregat Dinkes Surabaya. | **NEXT SPRINT (Pending)** |
-| **M4: Pra-Deployment & Integrasi Meta** | Registrasi nomor resmi WABA Meta, setup VPS Biznet GIO, konfigurasi domain & SSL. | **Fase M0 Lapangan** |
-
-### B. Linimasa Operasional Lapangan (Pilot 3 Bulan)
-| Periode | Fase Lapangan | Target & Indikator Capaian Utama |
-|---|---|---|
-| **Minggu 0** | **Pra-Deployment** | Konfigurasi VPS, verifikasi nomor bot WABA resmi, setup akun 13 faskes mitra, simulasi end-to-end triase. |
-| **Minggu 1 – 4** | **Bulan 1 Live** | Peluncuran resmi di 13 faskes, sosialisasi bidan PJ, onboarding Kohort 1 (~500 ibu), pemantauan KF1 & KF2 harian. |
-| **Minggu 5 – 8** | **Bulan 2 Live** | Onboarding Kohort 2 (~500 ibu baru), pemantauan lanjutan Kohort 1 (KF3 & KF4), evaluasi respon bidan faskes terhadap alert triase. Total 1.000 ibu kumulatif. |
-| **Minggu 9 – 12** | **Bulan 3 Live** | Onboarding Kohort 3 (~500 ibu baru), kelulusan nifas 42 hari Kohort 1 & 2, penarikan data analitik epidemiologi Surabaya, serah terima laporan ke Dinkes. Total 1.500 ibu kumulatif. |
+Roadmap rekayasa, status milestone, linimasa pilot, risiko, dan keputusan arah proyek **dipindahkan ke `PLAN.md` di root repositori**.
+Berkas tersebut **di-gitignore dan tidak boleh di-push** agar strategi, target deploy, dan risiko internal tidak ikut ke remote GitHub.
+Perbarui `PLAN.md` setiap ada perubahan arah; dokumen ini cukup memuat aturan kerja dan spesifikasi teknis.
 ---
 
 ## 12. Knowledge Graph & Code Intelligence (CodeGraph & Graphify)
@@ -303,7 +293,7 @@ Sebelum menulis rencana atau menyentuh kode, identifikasi domain pekerjaan dan b
 3. **`skill://karpathy-guidelines`**:
    - Selalu terapkan: *Think Before Coding* (tanpa asumsi, tanyakan ambiguitas), *Simplicity First* (kode minimal tanpa over-engineering), dan *Surgical Changes* (hanya sentuh baris yang relevan).
 4. **`skill://database-schema-designer` & `skill://database-migrations` (Wajib saat Terkait Basis Data, Skema, Indexing, Query, atau SQL)**:
-   - Setiap tugas yang menyentuh tabel, skema, indeks, query performa, atau file migrasi SQL di `web/supabase/migrations/` atau `app/models/` **WAJIB membaca kedua skill ini terlebih dahulu**.
+   - Setiap tugas yang menyentuh tabel, skema, indeks, query performa, atau file migrasi SQL di `web/supabase/migrations/` **WAJIB membaca kedua skill ini terlebih dahulu**.
    - **Prinsip Skema (`database-schema-designer`)**:
      a. *Integrity & FK Indexes*: Semua Foreign Key wajib memiliki indeks untuk mencegah *table lock* dan *slow join*.
      b. *Composite Indexing*: Buat indeks gabungan sesuai urutan selektivitas query (`puskesmas_id`, `waktu_krs desc`).

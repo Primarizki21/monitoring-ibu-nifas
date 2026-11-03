@@ -16,3 +16,6 @@ wheels/
 
 # Local knowledge graph & artifacts
 graphify-out/
+
+# Dokumen arah kerja lokal (jangan di-push)
+/PLAN.md

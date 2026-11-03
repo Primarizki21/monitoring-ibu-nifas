@@ -110,12 +110,10 @@ pengmas-rs-surabaya/
 │   ├── supabase/        # Skema basis data PostgreSQL, migrasi bertahap, fungsi RLS, dan seed data
 │   ├── scripts/         # Skrip pembuatan akun nakes uji per faskes
 │   └── e2e/             # Pengujian end-to-end terautomasi dengan Playwright
-├── app/                 # Modul Engine Riset & Bot WA KIA (FastAPI, SQLModel, Triage Engine, APScheduler)
 ├── docs/                # Dokumen Spesifikasi, PRD SIM-NIFAS, Project Charter, dan Flowchart
 ├── tools/report_docs/   # Toolchain generator dokumen formal DOCX & render diagram alir 300 DPI
-├── tests/               # Rangkaian uji otomatis backend Python (smoke test)
 ├── Makefile             # Otomasi alur kerja: setup, dev, build, seed-users, test-e2e, docs
-└── docker-compose.yml   # Kontainer basis data lokal pendukung
+└── docker-compose.yml   # Menjalankan aplikasi web dalam kontainer (Supabase tetap hosted)
 ```
 
 ---
@@ -141,8 +139,6 @@ Platform operasional web SIM-NIFAS menggunakan **Supabase (PostgreSQL 16)** deng
 2. **Database Triggers**: Kalkulasi batas waktu SLA ($T_{\text{deadline}} = T_0 + 48\text{ jam}$), penerbitan token, dan kalkulasi triase tanda bahaya dieksekusi secara instan di level database.
 3. **RPC Function (`get_dashboard_analytics`)**: Seluruh 10 indikator kinerja nifas dihitung langsung oleh mesin PostgreSQL, mengeliminasi masalah performa query N+1 pada dashboard pimpinan.
 4. **Supabase Realtime**: Menyebarkan sinyal peringatan bahaya (*Red Alert*) seketika ke antarmuka web tanpa perlu memuat ulang halaman (*polling*).
-
-*(Catatan: Modul Python/SQLModel di folder `app/` dipertahankan sebagai modul riset pelengkap untuk evaluasi bot KIA interaktif).*
 
 ---
 
@@ -269,9 +265,9 @@ Semua akun menggunakan kata sandi bawaan yang dikonfigurasikan pada `AKUN_UJI_PA
 
 ---
 
-## 9. Rangkaian Pengujian Terautomasi (Dual-Layer Testing)
+## 9. Rangkaian Pengujian Terautomasi
 
-Repositori dilengkapi pengujian menyeluruh pada dua layer sistem:
+Repositori dilengkapi pengujian pada dua layer sistem:
 
 ### A. Uji End-to-End Web Platform (Playwright)
 Menguji skenario operasional nyata pada database Supabase: alur login nakes, pengisian KRS oleh Bidan RS, laporan kunjungan bertanda bahaya oleh Bidan Kelurahan, kemunculan Red Alert di dashboard Kepala Puskesmas, dan pergantian tab tanpa muat ulang oleh Dinkes:
@@ -279,15 +275,11 @@ Menguji skenario operasional nyata pada database Supabase: alur login nakes, pen
 make test-e2e
 ```
 
-### B. Uji Engine Backend Python (Smoke Test)
-Menguji 9 skenario inti modul backend Python dan evaluasi triase deterministik:
+### B. Pemeriksaan Statis & Build Produksi
 ```bash
-uv run python tests/smoke_test.py
-```
-
-### C. Pemeriksaan Linter Frontend
-```bash
-make lint
+make lint                      # ESLint
+npm --prefix web exec tsc --noEmit   # TypeScript
+make build                     # next build
 ```
 
 ---
