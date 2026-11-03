@@ -337,7 +337,14 @@ Sebelum menulis rencana atau menyentuh kode, identifikasi domain pekerjaan dan b
      `codegraph sync`
    - Perintah ini memastikan basis data indeks CodeGraph (`.codegraph/`) selalu sinkron dan mencerminkan struktur simbol, edge pemanggilan, dan dependensi terbaru sebelum beralih ke tugas berikutnya.
 
-### Langkah 5: Siklus Atomic Commits Terisolasi
+### Langkah 5: Branch Fitur & Atomic Commits Terisolasi
+0. **Wajib Branch Fitur — Dilarang Commit Langsung ke `main`**:
+   - Sebelum menyentuh file, pastikan branch aktif **bukan** `main`. Jika masih di `main`, buat branch fitur baru lebih dulu:
+     `git switch -c <tipe>/<ringkas-kebab-case>` (contoh: `feat/token-cabut`, `fix/cron-retry`, `chore/ci-cd`).
+   - Nama `tipe` mengikuti format pesan commit: `feat`, `fix`, `docs`, `chore`, `perf`, `test`.
+   - Semua commit tugas/plan masuk ke branch fitur. `main` hanya menerima hasil merge, bukan commit langsung.
+   - Agen **tetap dilarang `git push`** (lihat §15). Setelah branch siap, agen berhenti dan menyerahkan push/PR ke pengguna.
+   - Jika menemukan branch aktif `main` dengan perubahan belum di-commit, pindahkan perubahan itu ke branch fitur sebelum commit pertama.
 1. **Satu Unit Perubahan Logis**:
    - Begitu 1 unit pekerjaan selesai dan terverifikasi, langsung lakukan commit sebelum berpindah ke tugas berikutnya.
    - Dilarang menggabungkan perubahan dependensi, kode backend, dan dokumentasi ke dalam satu mega-commit.
@@ -381,9 +388,10 @@ Sebelum menulis rencana atau menyentuh kode, identifikasi domain pekerjaan dan b
 
 ## 15. Batasan Keamanan & Eksekusi Eksternal (Strict Safety Boundaries)
 
-1. **Larangan `git push`**:
+1. **Larangan `git push` & Larangan Commit ke `main`**:
    - Agen **DILARANG KERAS** menjalankan `git push` atau mem-push kode ke remote repositori git dalam situasi apa pun.
-   - Semua commit git bersifat lokal. Operasi push ke remote hanya boleh dijalankan secara manual oleh pengguna.
+   - Agen **DILARANG** melakukan commit langsung di branch `main`. Seluruh pekerjaan wajib berada di branch fitur (lihat §13 Langkah 5 poin 0).
+   - Semua commit git bersifat lokal. Operasi push, PR, dan merge ke `main` hanya boleh dijalankan secara manual oleh pengguna.
 2. **Prosedur Pembuatan & Eksekusi Migrasi Basis Data Supabase**:
    - **Pembuatan File Migrasi oleh Agen**:
      - Setiap kali ada kebutuhan perubahan skema basis data, agen **WAJIB** membuat berkas migrasi baru menggunakan Supabase CLI:
