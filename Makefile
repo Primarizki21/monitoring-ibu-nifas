@@ -1,4 +1,4 @@
-.PHONY: help setup dev build start install seed-users lint typecheck test-e2e docker-build docker-up docker-down charts docs clean
+.PHONY: help setup dev build start install seed-users db-push lint typecheck test-e2e docker-build docker-up docker-down charts docs clean
 
 help:
 	@echo "======================================================================"
@@ -8,6 +8,7 @@ help:
 	@echo "  make setup        - Siapkan web/.env.local dan install dependensi npm"
 	@echo "  (Lalu isi kredensial Supabase Anda di file web/.env.local)"
 	@echo "  make seed-users   - Buat 4 akun uji faskes ke database Supabase"
+	@echo "  make db-push      - Terapkan migrasi Supabase (jalankan dari root, cwd benar)"
 	@echo ""
 	@echo "Alur Menjalankan Aplikasi:"
 	@echo "  make dev          - Jalankan dev server Next.js (http://localhost:3000)"
@@ -53,6 +54,9 @@ install:
 
 seed-users:
 	@cd web && node --env-file=.env.local scripts/buat-akun-uji.mjs
+
+db-push:
+	cd web && npx supabase db push --linked
 
 lint:
 	npm --prefix web run lint

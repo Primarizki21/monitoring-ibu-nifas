@@ -214,8 +214,11 @@ Hanya 7 variabel. Tiga wajib, tiga opsional, satu khusus pengujian lokal. Semua 
 Terapkan berkas migrasi database pada folder `web/supabase/migrations/` dan data awal `web/supabase/seed.sql` ke database Supabase Anda:
 - **Cara 1 (Supabase CLI - Direkomendasikan)**:
   ```bash
-  npx --prefix web supabase db push --include-seed
+  cd web
+  npx supabase link --project-ref <project-ref>   # sekali saja
+  npx supabase db push --include-seed
   ```
+  > `--prefix web` **tidak** memindahkan direktori kerja: CLI mencari folder `supabase/` relatif terhadap cwd. Jalankan dari `web/`, atau dari root dengan `npx --prefix web supabase --workdir web db push --include-seed`.
 - **Cara 2 (SQL Editor Manual)**: Jalankan berkas SQL di dalam `web/supabase/migrations/` secara berurutan sesuai urutan nama file, lalu akhiri dengan `web/supabase/seed.sql`.
 
 ### Langkah 4: Membuat Akun Tenaga Kesehatan Uji

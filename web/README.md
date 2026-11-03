@@ -72,7 +72,7 @@ docker compose --env-file web/.env.local down
 
 Healthcheck kontainer memakai `GET /api/health` (200 saat database terjangkau, 503 saat tidak).
 
-Database:
+Database (jalankan dari folder `web/` — CLI mencari `supabase/` relatif cwd):
 
 ```bash
 npx supabase link --project-ref <ref>

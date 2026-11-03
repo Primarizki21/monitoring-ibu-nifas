@@ -312,7 +312,7 @@ Sebelum menulis rencana atau menyentuh kode, identifikasi domain pekerjaan dan b
      b. *Composite Indexing*: Buat indeks gabungan sesuai urutan selektivitas query (`puskesmas_id`, `waktu_krs desc`).
      c. *Mesin Database untuk Agregasi*: Hitung metrik dan analitik di level SQL/RPC (`count(*) filter (...)`), jangan pernah menarik ribuan baris mentah untuk di-loop di memori Node.js/Python.
    - **Prinsip Migrasi (`database-migrations`)**:
-     a. *Every Change is a Migration*: Seluruh perubahan skema wajib dicatat via berkas migrasi baru menggunakan CLI (`npx --prefix web supabase migration new <nama>`).
+     a. *Every Change is a Migration*: Seluruh perubahan skema wajib dicatat via berkas migrasi baru menggunakan CLI (`cd web && npx supabase migration new <nama>`).
      b. *Zero-Downtime & Non-Destructive*: Gunakan `IF NOT EXISTS`, jangan pernah menambah `NOT NULL` tanpa `DEFAULT` pada tabel berisi data, dan dilarang keras menjalankan `DROP TABLE` / `DROP COLUMN` sembarangan.
      c. *Pemisahan DDL & DML*: Pisahkan pembuatan struktur tabel (DDL) dan pembaruan/backfill data (DML).
      d. *Verifikasi Pra-Push & User-Only*: Agen wajib memverifikasi ulang seluruh sintaks SQL sebelum meminta user menjalankan `npx supabase db push`.
@@ -427,7 +427,7 @@ Sebelum menulis rencana atau menyentuh kode, identifikasi domain pekerjaan dan b
 3. **Prosedur Pembuatan & Eksekusi Migrasi Basis Data Supabase**:
    - **Pembuatan File Migrasi oleh Agen**:
      - Setiap kali ada kebutuhan perubahan skema basis data, agen **WAJIB** membuat berkas migrasi baru menggunakan Supabase CLI:
-       `npx --prefix web supabase migration new <nama_migrasi>`
+       `cd web && npx supabase migration new <nama_migrasi>`
        (atau format timestamp standar pada folder `web/supabase/migrations/`).
      - Seluruh query SQL wajib menerapkan prinsip non-destruktif (`IF NOT EXISTS`, aman terhadap data yang sedang berjalan).
    - **Audit Wajib Sebelum Meminta User Push**:
@@ -436,4 +436,4 @@ Sebelum menulis rencana atau menyentuh kode, identifikasi domain pekerjaan dan b
      - Agen wajib memaparkan rincian dan jaminan keamanan SQL tersebut kepada pengguna.
    - **Larangan Eksekusi `db push` oleh Agen**:
      - Agen **DILARANG KERAS** mengeksekusi `npx supabase db push`, `npx supabase db reset`, atau mengeksekusi migrasi langsung ke basis data remote.
-     - Perintah `npx supabase db push` **HANYA BOLEH DIJALANKAN SECARA MANUAL OLEH PENGGUNA (USER ONLY)**.
+     - Perintah `npx supabase db push` **HANYA BOLEH DIJALANKAN SECARA MANUAL OLEH PENGGUNA (USER ONLY)**, dijalankan dari `web/` (atau `--workdir web`).
