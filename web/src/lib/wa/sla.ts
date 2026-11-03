@@ -1,3 +1,4 @@
+import { env } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/server";
 import { waAlert48h, waRemind24h } from "./template";
 
@@ -25,7 +26,7 @@ function dataSla(d: Baris) {
     alamat_lengkap: d.alamat_lengkap,
     nama_rs: d.rs?.nama_rs ?? "-",
     deadline_sla: d.deadline_sla,
-    url_kunjungan_token: `${process.env.NEXT_PUBLIC_APP_URL}/visit/${d.token_kunjungan}`,
+    url_kunjungan_token: `${env().NEXT_PUBLIC_APP_URL}/visit/${d.token_kunjungan}`,
   };
 }
 

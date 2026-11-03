@@ -3,10 +3,8 @@ import { wajibLogin, type Profil } from "@/lib/auth";
 import { ambilAlertAktif, ambilAnalitik, ambilDaftarPasien, filterBawaan, KATEGORI, type Filter, type Kategori } from "@/lib/data/dashboard";
 import { ambilMasterFaskes, type MasterFaskes } from "@/lib/data/master";
 import { createClient } from "@/lib/supabase/server";
+import { TANGGAL, UUID } from "@/lib/validasi";
 import { TampilanDashboard } from "./tampilan";
-
-const TANGGAL = /^\d{4}-\d{2}-\d{2}$/;
-const UUID = /^[0-9a-f-]{36}$/;
 
 type Master = MasterFaskes;
 
