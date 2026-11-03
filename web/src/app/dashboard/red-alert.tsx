@@ -43,6 +43,7 @@ export function RedAlert({ alerts }: { alerts: AlertAktif[] }) {
     <section
       id="red-alert"
       role="alert"
+      aria-atomic="true"
       className="scroll-mt-28 overflow-hidden rounded-[var(--radius-kaca)] bg-gradient-to-br from-red-600/90 to-rose-700/90 p-5 text-white shadow-[0_24px_48px_-20px_rgb(200_30_58/0.8)] ring-1 ring-white/25 backdrop-blur-xl"
     >
       <div className="flex items-center gap-3">
