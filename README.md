@@ -198,7 +198,7 @@ Hanya 7 variabel. Tiga wajib, tiga opsional, satu khusus pengujian lokal. Semua 
 
 | Variabel | Wajib | Dari mana | Catatan |
 |---|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Ya | Supabase Dashboard → project → **Project Settings → Data API** (Project URL) | Bentuk `https://<ref>.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Ya | Supabase Dashboard → project → **Project Settings → Data API** (Project URL) | **Bukan** "REST URL" (`.../rest/v1`) — cukup `https://<ref>.supabase.co`. Validasi menolak URL ber-path |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Ya | **Project Settings → API Keys → publishable** (nama lama: anon) | Publik, ikut ke bundle browser |
 | `SUPABASE_SERVICE_ROLE_KEY` | Ya | **Project Settings → API Keys → secret** (nama lama: service_role) | **Hanya server**; jangan pernah ditampilkan di browser |
 | `NEXT_PUBLIC_APP_URL` | Ya | Tentukan sendiri | Dev: `http://localhost:3000`; produksi: domain final. Dipakai tautan `/visit/<token>` |

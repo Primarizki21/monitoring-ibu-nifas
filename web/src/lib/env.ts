@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+// Project URL Supabase tidak boleh memuat path: dashboard menampilkan "REST URL"
+// (.../rest/v1) dan "Data API URL" (...); hanya yang kedua yang benar.
+const urlSupabase = z
+  .url("Harus URL Supabase yang valid")
+  .refine((u) => new URL(u).pathname === "/", "Gunakan Project URL Supabase tanpa path (hapus /rest/v1)")
+  .transform((u) => u.replace(/\/+$/, ""));
+
 // Variabel opsional sering ditulis sebagai string kosong di .env; perlakukan sebagai tidak diisi.
 const kosongJadiUndefined = <T extends z.ZodTypeAny>(skema: T) =>
   z.preprocess((nilai) => (nilai === "" ? undefined : nilai), skema);
@@ -7,7 +14,7 @@ const kosongJadiUndefined = <T extends z.ZodTypeAny>(skema: T) =>
 // Konfigurasi server divalidasi sekali saat proses start (src/instrumentation.ts).
 // Salah konfigurasi = proses gagal start, bukan error 500 saat ibu nifas memakai layanan.
 const skema = z.object({
-  NEXT_PUBLIC_SUPABASE_URL: z.url("Harus URL Supabase yang valid"),
+  NEXT_PUBLIC_SUPABASE_URL: urlSupabase,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(20, "Kunci anon Supabase terlalu pendek"),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(20, "Kunci service role Supabase terlalu pendek"),
   NEXT_PUBLIC_APP_URL: kosongJadiUndefined(z.url("Harus URL publik aplikasi yang valid").default("http://localhost:3000")),
@@ -34,10 +41,12 @@ export function env(): Env {
 
 // Kredensial Supabase yang aman dipakai di edge runtime (middleware): tanpa service role.
 export function envSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) {
-    throw new Error("NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY wajib diisi");
+  const hasil = urlSupabase.safeParse(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  if (!hasil.success || !anonKey) {
+    throw new Error(
+      `Konfigurasi Supabase tidak valid — ${hasil.success ? "NEXT_PUBLIC_SUPABASE_ANON_KEY wajib diisi" : hasil.error.issues[0].message}`,
+    );
   }
-  return { url, anonKey };
+  return { url: hasil.data, anonKey };
 }
