@@ -19,7 +19,9 @@ Prototipe ini berdiri sendiri (Next.js + Supabase) dan tidak memakai backend Fas
 | `/dashboard` | semua nakes | Tab **Ringkasan** (10 indikator PRD, tren, donut, Red Alert realtime) dan tab **Data ibu nifas** (detail per indikator) |
 | `/dashboard/pasien/[id]` | semua nakes | Detail pasien, tindak lanjut Red Alert, ubah status (dirawat kembali / meninggal) |
 
-API: `POST /api/v1/discharge`, `GET /api/v1/visit/:token`, `POST /api/v1/visit/submit`, `GET /api/v1/dashboard/analytics`, `GET /api/cron`.
+API: `POST /api/v1/discharge`, `GET /api/v1/visit/:token`, `POST /api/v1/visit/submit`, `GET /api/v1/dashboard/analytics`, `GET /api/cron`, `GET /api/health`.
+
+Keamanan: env divalidasi saat start (`src/instrumentation.ts`), CSP nonce per request, header keamanan di `next.config.ts`, mutasi ber-cookie menolak origin lintas situs, dan service role hanya dipakai di server.
 
 ## Struktur
 
@@ -60,6 +62,15 @@ Untuk demo, pakai build produksi; halaman tidak perlu dikompilasi saat pertama d
 ```bash
 npm run build && npm start
 ```
+
+Kontainer (Supabase tetap hosted; `web/.env.local` dipakai untuk build args & runtime):
+
+```bash
+docker compose --env-file web/.env.local up -d --build
+docker compose --env-file web/.env.local down
+```
+
+Healthcheck kontainer memakai `GET /api/health` (200 saat database terjangkau, 503 saat tidak).
 
 Database:
 
