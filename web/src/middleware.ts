@@ -6,8 +6,11 @@ import { envSupabase } from "@/lib/env";
 const HALAMAN_TERLINDUNG = ["/krs", "/dashboard"];
 
 // CSP dengan nonce: Next.js menyisipkan nonce ke skrip yang dirender dari header request `x-nonce`.
-function susunCsp(nonce: string) {
+// Origin Supabase ikut diizinkan agar Realtime berfungsi pada Supabase lokal (http/ws) maupun hosted.
+function susunCsp(nonce: string, supabaseUrl: string) {
   const dev = process.env.NODE_ENV !== "production";
+  const origin = new URL(supabaseUrl).origin;
+  const wsOrigin = origin.replace(/^http/, "ws");
   return [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${dev ? " 'unsafe-eval'" : ""}`,
@@ -15,7 +18,7 @@ function susunCsp(nonce: string) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self' data:",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+    `connect-src 'self' https://*.supabase.co wss://*.supabase.co ${origin} ${wsOrigin}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -25,7 +28,8 @@ function susunCsp(nonce: string) {
 
 export async function middleware(request: NextRequest) {
   const nonce = crypto.randomUUID().replaceAll("-", "");
-  const csp = susunCsp(nonce);
+  const { url, anonKey } = envSupabase();
+  const csp = susunCsp(nonce, url);
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
@@ -33,7 +37,6 @@ export async function middleware(request: NextRequest) {
 
   let response = NextResponse.next({ request: { headers: requestHeaders } });
 
-  const { url, anonKey } = envSupabase();
   const supabase = createServerClient(url, anonKey, {
     cookies: {
       getAll: () => request.cookies.getAll(),

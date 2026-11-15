@@ -1,14 +1,17 @@
-.PHONY: help setup dev build start install seed-users db-push lint typecheck test-e2e docker-build docker-up docker-down charts docs clean
+.PHONY: help setup doctor dev build start install seed-users db-start db-stop db-status db-reset db-push lint typecheck test-e2e docker-build docker-up docker-down charts docs clean
 
 help:
 	@echo "======================================================================"
 	@echo "SIM-NIFAS Surabaya — Manajemen Perintah (Branch: prototype-demo)"
 	@echo "======================================================================"
 	@echo "Alur Setup Awal (Clone Bersih):"
+	@echo "  make doctor       - Cek Node, npm, Docker, Supabase CLI, dan .env.local"
 	@echo "  make setup        - Siapkan web/.env.local dan install dependensi npm"
-	@echo "  (Lalu isi kredensial Supabase Anda di file web/.env.local)"
-	@echo "  make seed-users   - Buat 4 akun uji faskes ke database Supabase"
-	@echo "  make db-push      - Terapkan migrasi Supabase (jalankan dari root, cwd benar)"
+	@echo "  make db-start     - Jalankan Supabase lokal Docker (migrasi + seed)"
+	@echo "  make db-status    - Tampilkan URL dan kunci Supabase lokal"
+	@echo "  make seed-users   - Buat 4 akun uji faskes ke database lokal"
+	@echo "  make db-reset     - Reset database lokal Docker (destruktif, lokal saja)"
+	@echo "  make db-push      - Terapkan migrasi ke Supabase hosted (manual pengguna)"
 	@echo ""
 	@echo "Alur Menjalankan Aplikasi:"
 	@echo "  make dev          - Jalankan dev server Next.js (http://localhost:3000)"
@@ -54,6 +57,21 @@ install:
 
 seed-users:
 	@cd web && node --env-file=.env.local scripts/buat-akun-uji.mjs
+
+doctor:
+	@bash web/scripts/cek-prasyarat.sh
+
+db-start: doctor
+	cd web && npx supabase start
+
+db-stop:
+	cd web && npx supabase stop
+
+db-status:
+	cd web && npx supabase status
+
+db-reset:
+	cd web && npx supabase db reset
 
 db-push:
 	cd web && npx supabase db push --linked
