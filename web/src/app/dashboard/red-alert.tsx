@@ -1,17 +1,49 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Phone, Siren } from "lucide-react";
+import { Phone, Siren, Volume2, VolumeX } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { AlertAktif } from "@/lib/data/dashboard";
 import { formatWaktu } from "@/lib/wa/template";
+
+// Nada pendek untuk alert baru. Dibuat saat dipanggil agar tidak ada aset audio
+// dan tidak menahan AudioContext saat tidak ada alert.
+function bunyiAlarm() {
+  if (typeof window === "undefined") return;
+  const Ctor = window.AudioContext;
+  if (!Ctor) return;
+  const ctx = new Ctor();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "sine";
+  osc.frequency.value = 880;
+  gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.45);
+  osc.connect(gain).connect(ctx.destination);
+  void ctx
+    .resume()
+    .then(() => {
+      osc.start();
+      osc.stop(ctx.currentTime + 0.45);
+    })
+    .catch(() => undefined)
+    .finally(() => ctx.close());
+}
 
 // Floating Red Alert Banner (PRD 3, Tahap 5). Berlangganan Supabase Realtime:
 // alert baru atau status discharge berubah -> data dashboard dimuat ulang.
 export function RedAlert({ alerts }: { alerts: AlertAktif[] }) {
   const router = useRouter();
+  const [bunyiAktif, setBunyiAktif] = useState(true);
+  const jumlahSebelumnya = useRef(alerts.length);
+
+  useEffect(() => {
+    if (alerts.length > jumlahSebelumnya.current && bunyiAktif) bunyiAlarm();
+    jumlahSebelumnya.current = alerts.length;
+  }, [alerts.length, bunyiAktif]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -57,6 +89,20 @@ export function RedAlert({ alerts }: { alerts: AlertAktif[] }) {
           </h2>
           <p className="text-sm text-white/80">Hubungi bidan kelurahan atau dampingi rujukan ke IGD terdekat.</p>
         </div>
+        <button
+          type="button"
+          aria-pressed={bunyiAktif}
+          onClick={() => {
+            const berikutnya = !bunyiAktif;
+            setBunyiAktif(berikutnya);
+            if (berikutnya) bunyiAlarm();
+          }}
+          className="ml-auto inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl bg-white/15 px-3 py-2 text-sm font-semibold ring-1 ring-white/25 hover:bg-white/25 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/40"
+          title={bunyiAktif ? "Matikan alarm suara" : "Aktifkan alarm suara"}
+        >
+          {bunyiAktif ? <Volume2 className="size-4" aria-hidden="true" /> : <VolumeX className="size-4" aria-hidden="true" />}
+          <span className="hidden sm:inline">Alarm {bunyiAktif ? "aktif" : "mati"}</span>
+        </button>
       </div>
       <ul className="mt-4 grid gap-2 md:grid-cols-2">
         {alerts.slice(0, 4).map((a) => (

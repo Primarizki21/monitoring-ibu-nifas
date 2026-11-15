@@ -54,7 +54,7 @@ PRD tidak memuat field kontak darurat suami/pendamping. Jangan menambahkannya ta
 | `SUPERADMIN_DINKES` | Kota Surabaya | Dashboard global; tindak lanjut Red Alert; manajemen master faskes dan user |
 | Ibu nifas | Nomor WhatsApp | Penerima pesan edukasi dan pengingat; bukan pengguna web |
 
-Catatan: halaman manajemen master faskes/user adalah fitur PRD yang belum ada di UI. Saat ini akun uji dibuat melalui `web/scripts/buat-akun-uji.mjs`.
+Halaman `/admin` tersedia untuk Superadmin Dinkes: tambah master Puskesmas/RS/kelurahan, buat akun tenaga kesehatan, dan aktifkan/nonaktifkan akun. Akun uji awal tetap dapat dibuat melalui `web/scripts/buat-akun-uji.mjs`.
 
 ---
 
@@ -171,6 +171,7 @@ Teks pesan mengikuti PRD §6.2. Jangan menambah template KF atau pesan skrining 
    - `GET /api/v1/visit/[token]`
    - `POST /api/v1/visit/submit`
    - `GET /api/v1/dashboard/analytics`
+   - `GET /api/v1/dashboard/export` (CSV sesuai filter dan kategori)
    - `GET /api/cron` dengan `Authorization: Bearer <CRON_SECRET>`
    - `GET /api/health`
 4. **WhatsApp**: Fonnte (`web/src/lib/wa/fonnte.ts`), antrean `log_notifikasi_wa`, worker `web/src/lib/wa/worker.ts`, cron SLA `web/src/lib/wa/sla.ts`.

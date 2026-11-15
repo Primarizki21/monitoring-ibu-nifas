@@ -46,6 +46,11 @@ async function selesaikanAlert(formData: FormData) {
 
 type Alert = { id: string; jenis_masalah: string; waktu_laporan: string; is_resolved: boolean; catatan_tindakan: string | null; resolved_at: string | null };
 
+function menitRespons(a: Alert) {
+  if (!a.resolved_at) return null;
+  return Math.max(0, Math.round((new Date(a.resolved_at).getTime() - new Date(a.waktu_laporan).getTime()) / 60_000));
+}
+
 export default async function DetailPasien({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const db = await createClient();
@@ -106,6 +111,7 @@ export default async function DetailPasien({ params }: { params: Promise<{ id: s
                   <UserRoundCheck className="mt-0.5 size-5 shrink-0 text-sirih" aria-hidden="true" />
                   <p>
                     <span className="font-semibold">{a.jenis_masalah}</span> sudah ditangani {a.resolved_at && formatWaktu(a.resolved_at)}
+                    {menitRespons(a) !== null && <span className="block text-tinta-redup">Respons {menitRespons(a)} menit setelah laporan.</span>}
                     {a.catatan_tindakan && <span className="block text-tinta-redup">{a.catatan_tindakan}</span>}
                   </p>
                 </div>

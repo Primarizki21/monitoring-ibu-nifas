@@ -111,6 +111,10 @@ test("Kepala Puskesmas melihat Red Alert, kartu indikator, dan menindaklanjuti",
 
   const alert = page.locator("#red-alert");
   await expect(alert).toContainText(NAMA);
+  const alarm = alert.getByRole("button", { name: /Alarm/ });
+  await expect(alarm).toHaveAttribute("aria-pressed", "true");
+  await alarm.click();
+  await expect(alarm).toHaveAttribute("aria-pressed", "false");
 
   // 10 kartu indikator PRD 8.1
   const kartu = page.getByRole("region", { name: "Indikator utama" }).getByRole("button");
