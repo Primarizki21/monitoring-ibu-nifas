@@ -2,7 +2,7 @@
 
 Sistem informasi dan pemantauan kesehatan ibu nifas terautomasi berbasis **Progressive Web App (PWA)** dan **WhatsApp Gateway** untuk kegiatan Pengabdian Masyarakat (Pengmas) di Kota Surabaya.
 
-Sistem menghubungkan **Rumah Sakit Rujukan** dan **Puskesmas Mitra / Bidan Kelurahan** di Surabaya untuk mengawal kepulangan pasien (*discharge planning*), menegakkan standar kunjungan rumah maksimal $2 \times 24\text{ jam}$ ($48\text{ jam}$), mendeteksi dini tanda bahaya maternal, serta mendampingi masa nifas hingga genap **42 hari (KF1 s/d KF4)**.
+Sistem menghubungkan **Rumah Sakit Rujukan** dan **Puskesmas Mitra / Bidan Kelurahan** di Surabaya untuk mengawal kepulangan pasien (*discharge planning*), menegakkan standar kunjungan rumah maksimal $2 \times 24\text{ jam}$ ($48\text{ jam}$), mendeteksi dini tanda bahaya maternal, serta menyediakan dashboard tindak lanjut dan audit maternal bagi Puskesmas dan Dinkes.
 
 ---
 
@@ -14,7 +14,7 @@ Sistem menghubungkan **Rumah Sakit Rujukan** dan **Puskesmas Mitra / Bidan Kelur
 
 - **Google Spreadsheet (RAB & Matriks Klinis)**:  
   [Buka Google Spreadsheet](https://docs.google.com/spreadsheets/d/1J38nXV5J0ri4aM3_s0h6bYo-dELT1FO5RBnxITIlUtc/edit?usp=sharing)  
-  *Rincian anggaran biaya pilot lapangan dan kamus lengkap pesan interaktif KF1–KF4 (Tab resmi: `RAB Revisi (3 Bulan)`).*
+  *Rincian anggaran biaya pilot lapangan dan matriks pesan PRD §6 (Tab resmi: `RAB Revisi (3 Bulan)`).*
 
 - **Product Requirement Document (PRD Web Platform)**:  
   Lihat [`docs/PRD_SIM_NIFAS_SURABAYA.md`](docs/PRD_SIM_NIFAS_SURABAYA.md) untuk spesifikasi modul pemulangan KRS, kunjungan rumah 48 jam bertoken, 10 KPI kesehatan kota, dan kontrak API web.
@@ -42,8 +42,8 @@ Sistem menghubungkan **Rumah Sakit Rujukan** dan **Puskesmas Mitra / Bidan Kelur
    Bidan Kelurahan melaporkan hasil kunjungan fisik di lapangan melalui tautan token acak 64-karakter yang aman tanpa hambatan autentikasi login yang rumit di lapangan.
 6. **Isolasi Data Multi-Tenant (Supabase Row Level Security)**:  
    Isolasi hak akses data ditegakkan di level basis data. Bidan RS hanya mengakses pasien faskesnya; Bidan Kelurahan hanya mengakses wilayah kelurahannya; Kepala Puskesmas mengawasi wilayah puskesmasnya; Dinas Kesehatan memantau agregat seluruh kota.
-7. **Siklus Pemantauan Lengkap 42 Hari**:  
-   Kunjungan rumah 48 jam berpadu dengan pemantauan berkala KF1–KF4 hingga hari ke-42 pascasalin untuk memastikan pemulihan organ reproduksi dan pencegahan komplikasi lanjutan.
+7. **Pemantauan Tindak Lanjut & Audit Maternal**:  
+   Setelah laporan kunjungan 48 jam, pasien tetap tampil di dashboard untuk pemantauan. Nakes memperbarui status `DIRAWAT_KEMBALI` atau `MENINGGAL` untuk kebutuhan audit maternal perinatal. PRD tidak mengatur siklus KF1–KF4 atau pemantauan 42 hari.
 
 ---
 
@@ -54,7 +54,7 @@ sequenceDiagram
     autonumber
     actor BidanRS as Bidan RS
     participant Web as Web App (Next.js 15)
-    participant DB as Supabase (PostgreSQL 16)
+    participant DB as Supabase (PostgreSQL)
     participant WA as WhatsApp Gateway (Fonnte / Meta)
     actor BidanKel as Bidan Kelurahan
     actor Ibu as Ibu Nifas
@@ -113,7 +113,7 @@ pengmas-rs-surabaya/
 ├── docs/                # Dokumen Spesifikasi, PRD SIM-NIFAS, Project Charter, dan Flowchart
 ├── tools/report_docs/   # Toolchain generator dokumen formal DOCX & render diagram alir 300 DPI
 ├── Makefile             # Otomasi alur kerja: setup, dev, build, seed-users, test-e2e, docs
-└── docker-compose.yml   # Menjalankan aplikasi web dalam kontainer (Supabase tetap hosted)
+└── docker-compose.yml   # Menjalankan aplikasi web dalam kontainer (Supabase lokal untuk dev, hosted untuk staging)
 ```
 
 ---
@@ -198,9 +198,9 @@ Hanya 7 variabel. Tiga wajib, tiga opsional, satu khusus pengujian lokal. Semua 
 
 | Variabel | Wajib | Dari mana | Catatan |
 |---|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Ya | Supabase Dashboard → project → **Project Settings → Data API** (Project URL) | **Bukan** "REST URL" (`.../rest/v1`) — cukup `https://<ref>.supabase.co`. Validasi menolak URL ber-path |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Ya | **Project Settings → API Keys → publishable** (nama lama: anon) | Publik, ikut ke bundle browser |
-| `SUPABASE_SERVICE_ROLE_KEY` | Ya | **Project Settings → API Keys → secret** (nama lama: service_role) | **Hanya server**; jangan pernah ditampilkan di browser |
+| `NEXT_PUBLIC_SUPABASE_URL` | Ya | Lokal: `http://127.0.0.1:54321`; hosted: **Project Settings → Data API** (Project URL) | **Bukan** "REST URL" (`.../rest/v1`) — cukup origin. Validasi menolak URL ber-path |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Ya | Lokal: `ANON_KEY` dari `npx supabase status -o env`; hosted: **Project Settings → API Keys → publishable** | Publik, ikut ke bundle browser |
+| `SUPABASE_SERVICE_ROLE_KEY` | Ya | Lokal: `SERVICE_ROLE_KEY` dari `npx supabase status -o env`; hosted: **Project Settings → API Keys → secret** | **Hanya server**; jangan pernah ditampilkan di browser |
 | `NEXT_PUBLIC_APP_URL` | Ya | Tentukan sendiri | Dev: `http://localhost:3000`; produksi: domain final. Dipakai tautan `/visit/<token>` |
 | `FONNTE_TOKEN` | Tidak | [fonnte.com](https://fonnte.com) → Device → Token | Kosong = pesan tetap `QUEUED`, retry tidak terpakai |
 | `CRON_SECRET` | Tidak | Generate sendiri: `openssl rand -hex 32` | Harus sama dengan Supabase Vault (`cron_secret`) bila cron diaktifkan. Kosong = `/api/cron` selalu 401 |
@@ -210,16 +210,35 @@ Hanya 7 variabel. Tiga wajib, tiga opsional, satu khusus pengujian lokal. Semua 
 >
 > Variabel `DEPLOY_*` dan `NEXT_PUBLIC_SUPABASE_*` di GitHub **tidak perlu diisi selama development**. Daftarnya ada di §13 dan baru relevan saat deploy.
 
-### Langkah 3: Setup Skema Basis Data di Supabase
-Terapkan berkas migrasi database pada folder `web/supabase/migrations/` dan data awal `web/supabase/seed.sql` ke database Supabase Anda:
-- **Cara 1 (Supabase CLI - Direkomendasikan)**:
-  ```bash
-  cd web
-  npx supabase link --project-ref <project-ref>   # sekali saja
-  npx supabase db push --include-seed
-  ```
-  > `--prefix web` **tidak** memindahkan direktori kerja: CLI mencari folder `supabase/` relatif terhadap cwd. Jalankan dari `web/`, atau dari root dengan `npx --prefix web supabase --workdir web db push --include-seed`.
-- **Cara 2 (SQL Editor Manual)**: Jalankan berkas SQL di dalam `web/supabase/migrations/` secara berurutan sesuai urutan nama file, lalu akhiri dengan `web/supabase/seed.sql`.
+### Langkah 3: Setup Skema Basis Data
+
+**Development lokal (utama)** — Supabase Docker:
+```bash
+cd web
+npx supabase start
+npx supabase status -o env
+```
+Isi `web/.env.local` dari output `status`:
+- `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY=<ANON_KEY>`
+- `SUPABASE_SERVICE_ROLE_KEY=<SERVICE_ROLE_KEY>`
+- `NEXT_PUBLIC_APP_URL=http://localhost:3000`
+
+`supabase start` menerapkan `web/supabase/migrations/` dan `web/supabase/seed.sql` pada database lokal. Untuk mengulang dari awal:
+```bash
+cd web
+npx supabase db reset
+```
+`db reset` hanya untuk database lokal Docker. Jangan menjalankannya pada project hosted.
+
+**Staging/pilot** — Supabase hosted:
+```bash
+cd web
+npx supabase link --project-ref <project-ref>   # sekali saja
+npx supabase db push --include-seed
+```
+> `--prefix web` **tidak** memindahkan direktori kerja: CLI mencari folder `supabase/` relatif terhadap cwd. Jalankan dari `web/`, atau dari root dengan `npx --prefix web supabase --workdir web db push --include-seed`.
+> `db push` ke project hosted hanya dijalankan manual oleh pengguna.
 
 ### Langkah 4: Membuat Akun Tenaga Kesehatan Uji
 ```bash
