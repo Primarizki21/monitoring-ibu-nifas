@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { Building2, Hospital, MapPin, ShieldCheck, UserPlus, UsersRound } from "lucide-react";
@@ -162,6 +163,21 @@ async function ubahAktif(formData: FormData) {
   berhasil(aktif ? "Akun diaktifkan." : "Akun dinonaktifkan.");
 }
 
+async function resetPassword(formData: FormData) {
+  "use server";
+  await pastikanDinkes();
+  const id = String(formData.get("id") ?? "");
+  const password = String(formData.get("password") ?? "");
+  if (!UUID.test(id)) gagal("ID akun tidak valid.");
+  if (password.length < 8) gagal("Kata sandi minimal 8 karakter.");
+
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.updateUserById(id, { password });
+  if (error) gagal(error.message);
+  revalidatePath("/admin");
+  berhasil("Kata sandi akun diperbarui.");
+}
+
 export default async function AdminPage({ searchParams }: { searchParams: Promise<{ ok?: string; error?: string }> }) {
   const profil = await wajibLogin();
   if (profil.role !== "SUPERADMIN_DINKES") redirect("/dashboard");
@@ -195,6 +211,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <p className="mt-1 max-w-[70ch] text-sm text-tinta-redup">
             {master.puskesmas.length} Puskesmas, {master.kelurahan.length} kelurahan, {master.rs.length} RS, {pengguna.length} akun tenaga kesehatan.
           </p>
+          <Link href="/admin/master" className="btn-secondary mt-3 inline-flex min-h-11 px-4 py-2 text-sm">
+            Kelola master faskes
+          </Link>
         </header>
 
         {q.ok && <p role="status" className="rounded-2xl bg-emerald-50/90 px-4 py-3 text-sm text-emerald-900 ring-1 ring-emerald-200">{q.ok}</p>}
@@ -349,6 +368,23 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                           {u.is_active ? "Nonaktifkan" : "Aktifkan"}
                         </button>
                       </form>
+                      <details className="mt-1 text-left">
+                        <summary className="cursor-pointer text-xs font-semibold text-selat underline">Reset sandi</summary>
+                        <form action={resetPassword} className="mt-2 flex justify-end gap-1">
+                          <input type="hidden" name="id" value={u.id} />
+                          <input
+                            name="password"
+                            type="password"
+                            required
+                            minLength={8}
+                            autoComplete="new-password"
+                            placeholder="Sandi baru"
+                            aria-label={`Kata sandi baru untuk ${u.nama_lengkap}`}
+                            className="input w-36 px-2 py-1 text-xs"
+                          />
+                          <button className="rounded-lg bg-selat px-2 py-1 text-xs font-semibold text-white hover:bg-selat-tua">Simpan</button>
+                        </form>
+                      </details>
                     </td>
                   </tr>
                 ))}
