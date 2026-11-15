@@ -54,7 +54,7 @@ PRD tidak memuat field kontak darurat suami/pendamping. Jangan menambahkannya ta
 | `SUPERADMIN_DINKES` | Kota Surabaya | Dashboard global; tindak lanjut Red Alert; manajemen master faskes dan user |
 | Ibu nifas | Nomor WhatsApp | Penerima pesan edukasi dan pengingat; bukan pengguna web |
 
-Halaman `/admin` tersedia untuk Superadmin Dinkes: tambah master Puskesmas/RS/kelurahan, buat akun tenaga kesehatan, dan aktifkan/nonaktifkan akun. Akun uji awal tetap dapat dibuat melalui `web/scripts/buat-akun-uji.mjs`.
+Halaman `/admin` tersedia untuk Superadmin Dinkes: tambah master Puskesmas/RS/kelurahan, buat akun tenaga kesehatan, aktifkan/nonaktifkan akun, dan reset kata sandi. Halaman `/admin/master` dipakai untuk mengubah master faskes. Akun uji awal tetap dapat dibuat melalui `web/scripts/buat-akun-uji.mjs`.
 
 ---
 
