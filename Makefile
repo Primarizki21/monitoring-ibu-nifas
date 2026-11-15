@@ -1,10 +1,11 @@
-.PHONY: help setup dev build start install seed-users db-start db-stop db-status db-reset db-push lint typecheck test-e2e docker-build docker-up docker-down charts docs clean
+.PHONY: help setup doctor dev build start install seed-users db-start db-stop db-status db-reset db-push lint typecheck test-e2e docker-build docker-up docker-down charts docs clean
 
 help:
 	@echo "======================================================================"
 	@echo "SIM-NIFAS Surabaya — Manajemen Perintah (Branch: prototype-demo)"
 	@echo "======================================================================"
 	@echo "Alur Setup Awal (Clone Bersih):"
+	@echo "  make doctor       - Cek Node, npm, Docker, Supabase CLI, dan .env.local"
 	@echo "  make setup        - Siapkan web/.env.local dan install dependensi npm"
 	@echo "  make db-start     - Jalankan Supabase lokal Docker (migrasi + seed)"
 	@echo "  make db-status    - Tampilkan URL dan kunci Supabase lokal"
@@ -57,7 +58,10 @@ install:
 seed-users:
 	@cd web && node --env-file=.env.local scripts/buat-akun-uji.mjs
 
-db-start:
+doctor:
+	@bash web/scripts/cek-prasyarat.sh
+
+db-start: doctor
 	cd web && npx supabase start
 
 db-stop:

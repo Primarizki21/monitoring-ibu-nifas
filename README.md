@@ -42,7 +42,7 @@ Sistem menghubungkan **Rumah Sakit Rujukan** dan **Puskesmas Mitra / Bidan Kelur
    Bidan Kelurahan melaporkan hasil kunjungan fisik di lapangan melalui tautan token acak 64-karakter yang aman tanpa hambatan autentikasi login yang rumit di lapangan.
 6. **Isolasi Data Multi-Tenant (Supabase Row Level Security)**:  
    Isolasi hak akses data ditegakkan di level basis data. Bidan RS hanya mengakses pasien faskesnya; Bidan Kelurahan hanya mengakses wilayah kelurahannya; Kepala Puskesmas mengawasi wilayah puskesmasnya; Dinas Kesehatan memantau agregat seluruh kota.
-7. **Pemantauan Tindak Lanjut & Audit Maternal**:  
+7. **Pemantauan Tindak Lanjut & Audit Maternal**:
    Setelah laporan kunjungan 48 jam, pasien tetap tampil di dashboard untuk pemantauan. Nakes memperbarui status `DIRAWAT_KEMBALI` atau `MENINGGAL` untuk kebutuhan audit maternal perinatal. PRD tidak mengatur siklus KF1–KF4 atau pemantauan 42 hari.
 
 ---
@@ -186,11 +186,37 @@ Bidan Kelurahan melakukan pemeriksaan fisik langsung di rumah ibu nifas dalam re
 
 Seluruh alur kerja telah diotomatisasi melalui **`Makefile`** di root repositori.
 
+**Quickstart lokal** (Docker harus aktif):
+```bash
+make doctor          # cek Node, npm, Docker, Supabase CLI
+make setup           # install dependensi + buat web/.env.local
+make db-start        # nyalakan Supabase lokal (migrasi + seed)
+make db-status       # salin ANON_KEY dan SERVICE_ROLE_KEY ke web/.env.local
+make seed-users      # buat 4 akun uji lokal
+make dev             # buka http://localhost:3000
+```
+Isi kunci Supabase di `web/.env.local` setelah `make db-status`, lalu jalankan `make seed-users` dan `make dev`.
+
+### Langkah 0: Prasyarat
+
+Supabase lokal membutuhkan **Docker yang sudah terpasang dan daemon-nya berjalan**. `npx supabase start` hanya menjalankan container; perintah itu **tidak memasang Docker**.
+
+Prasyarat:
+- Node.js >= 20 dan npm
+- Docker Engine/Desktop aktif
+- Git
+
+Jalankan pemeriksaan otomatis:
+```bash
+make doctor
+```
+`make doctor` mengecek Node, npm, Docker CLI, daemon Docker, Docker Compose, Supabase CLI lokal, `web/.env.local`, dan status stack. Perintah ini tidak memasang apa pun. Jika Docker belum ada, install dari [docs.docker.com/engine/install](https://docs.docker.com/engine/install/) terlebih dahulu.
+
 ### Langkah 1: Setup Awal & Dependensi
 ```bash
 make setup
 ```
-> Perintah ini menyalin template `web/.env.example` menjadi `web/.env.local` dan mengunduh dependensi npm.
+> Perintah ini menyalin template `web/.env.example` menjadi `web/.env.local` dan mengunduh dependensi npm. Kunci Supabase belum terisi pada langkah ini.
 
 ### Langkah 2: Konfigurasi `web/.env.local`
 
@@ -214,22 +240,21 @@ Hanya 7 variabel. Tiga wajib, tiga opsional, satu khusus pengujian lokal. Semua 
 
 **Development lokal (utama)** — Supabase Docker:
 ```bash
-cd web
-npx supabase start
-npx supabase status -o env
+make db-start
+make db-status
 ```
-Isi `web/.env.local` dari output `status`:
+`make db-start` menjalankan `make doctor` lebih dulu, lalu menyalakan container Supabase. Status menampilkan URL dan kunci lokal:
 - `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY=<ANON_KEY>`
 - `SUPABASE_SERVICE_ROLE_KEY=<SERVICE_ROLE_KEY>`
 - `NEXT_PUBLIC_APP_URL=http://localhost:3000`
 
-`supabase start` menerapkan `web/supabase/migrations/` dan `web/supabase/seed.sql` pada database lokal. Untuk mengulang dari awal:
+`db-start` menerapkan `web/supabase/migrations/` dan `web/supabase/seed.sql` saat database lokal masih kosong. Data tersimpan di Docker volume dan tetap ada setelah `make db-stop`.
+Untuk mengulang dari awal:
 ```bash
-cd web
-npx supabase db reset
+make db-reset
 ```
-`db reset` hanya untuk database lokal Docker. Jangan menjalankannya pada project hosted.
+`db-reset` hanya untuk database lokal Docker dan menghapus data lokal. Jangan menjalankannya pada project hosted.
 
 **Staging/pilot** — Supabase hosted:
 ```bash
@@ -277,7 +302,12 @@ Semua akun menggunakan kata sandi bawaan yang dikonfigurasikan pada `AKUN_UJI_PA
 | Perintah | Deskripsi |
 |---|---|
 | `make help` | Menampilkan panduan seluruh perintah Makefile |
+| `make doctor` | Memeriksa Node, npm, Docker, Supabase CLI, dan `.env.local` |
 | `make setup` | Menyiapkan `web/.env.local` dan mengunduh dependensi npm |
+| `make db-start` | Menjalankan Supabase lokal Docker (didahului `make doctor`) |
+| `make db-status` | Menampilkan URL dan kunci Supabase lokal |
+| `make db-stop` | Menghentikan container; data di Docker volume tetap ada |
+| `make db-reset` | Menghapus dan membangun ulang database lokal dari migrasi + seed |
 | `make dev` | Menjalankan server development Next.js |
 | `make build` | Mengompilasi aplikasi untuk mode produksi |
 | `make start` | Menjalankan server aplikasi mode produksi |
