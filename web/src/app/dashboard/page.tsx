@@ -7,6 +7,12 @@ import { TANGGAL, UUID } from "@/lib/validasi";
 import { TampilanDashboard } from "./tampilan";
 
 type Master = MasterFaskes;
+const PER_HALAMAN = 25;
+
+function nomorHalaman(nilai: string | undefined) {
+  const n = Number.parseInt(nilai ?? "1", 10);
+  return Number.isFinite(n) && n > 0 ? n : 1;
+}
 
 // Nama wilayah yang dicakup data pengguna, diambil dari tabel master yang sudah dimuat.
 function namaCakupan(p: Profil, m: Master) {
@@ -27,16 +33,24 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   };
   const tab = q.tab === "data" ? "data" : "ringkasan";
   const kategori = tab === "data" && q.kategori && q.kategori in KATEGORI ? (q.kategori as Kategori) : undefined;
+  const halaman = tab === "data" ? nomorHalaman(q.page) : 1;
 
+  const profil = await wajibLogin();
   const db = await createClient();
-  // Pengambilan data analitik dan 100 pasien terbaru dibatasi RLS; data master RS & wilayah di-cache server-side.
-  const [profil, { metrics, chart_series }, pasien, alerts, master] = await Promise.all([
-    wajibLogin(),
+  // Analitik dan daftar pasien dibatasi RLS. Token hanya diambil untuk Bidan Kelurahan
+  // yang memang membutuhkan tautan pengisian laporan; role lain tidak menerima token di props.
+  const [{ metrics, chart_series }, daftar, alerts, master] = await Promise.all([
     ambilAnalitik(db, filter),
-    ambilDaftarPasien(db, filter, 100),
+    ambilDaftarPasien(db, filter, {
+      halaman,
+      perHalaman: PER_HALAMAN,
+      kategori,
+      sertakanToken: profil.role === "BIDAN_KELURAHAN",
+    }),
     ambilAlertAktif(db),
     ambilMasterFaskes(),
   ]);
+  const totalHalaman = Math.max(1, Math.ceil(daftar.total / PER_HALAMAN));
   const bisaPilihPuskesmas = profil.role === "SUPERADMIN_DINKES" || profil.role === "BIDAN_RS";
   const kelurahan =
     profil.role === "BIDAN_KELURAHAN" ? null : master.kelurahan.filter((k) => profil.role !== "KEPALA_PUSKESMAS" || k.puskesmas_id === profil.puskesmas_id);
@@ -55,7 +69,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         filter={{ mulai: filter.mulai, selesai: filter.selesai }}
         metrics={metrics}
         chart_series={chart_series}
-        pasien={pasien}
+        pasien={daftar.rows}
+        totalPasien={daftar.total}
+        halaman={halaman}
+        totalHalaman={totalHalaman}
+        perHalaman={PER_HALAMAN}
         alerts={alerts}
         puskesmas={bisaPilihPuskesmas ? master.puskesmas.map((p) => ({ id: p.id, nama: p.nama_puskesmas })) : null}
         kelurahan={kelurahan?.map((k) => ({ id: k.id, nama: k.nama_kelurahan, puskesmas_id: k.puskesmas_id })) ?? null}

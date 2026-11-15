@@ -111,6 +111,10 @@ test("Kepala Puskesmas melihat Red Alert, kartu indikator, dan menindaklanjuti",
 
   const alert = page.locator("#red-alert");
   await expect(alert).toContainText(NAMA);
+  const alarm = alert.getByRole("button", { name: /Alarm/ });
+  await expect(alarm).toHaveAttribute("aria-pressed", "true");
+  await alarm.click();
+  await expect(alarm).toHaveAttribute("aria-pressed", "false");
 
   // 10 kartu indikator PRD 8.1
   const kartu = page.getByRole("region", { name: "Indikator utama" }).getByRole("button");
@@ -144,6 +148,13 @@ test("Dinkes: filter dan tab bekerja tanpa muat ulang halaman", async ({ page })
   await page.getByRole("button", { name: "Data ibu nifas", exact: true }).click();
   await expect(page).toHaveURL(/tab=data.*|.*puskesmas_id=.*tab=data/);
   await expect(page.getByRole("heading", { name: "Semua data ibu nifas" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Isi laporan" })).toHaveCount(0);
+
+  const [unduhan] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("link", { name: "Unduh CSV" }).click(),
+  ]);
+  expect(unduhan.suggestedFilename()).toMatch(/^sim-nifas-\d{4}-\d{2}-\d{2}-\d{4}-\d{2}-\d{2}\.csv$/);
 
   // Penanda di window tetap ada = navigasi sisi klien, bukan muat ulang penuh.
   expect(await page.evaluate(() => (window as unknown as { penanda?: number }).penanda)).toBe(1);

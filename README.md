@@ -293,7 +293,9 @@ Semua akun menggunakan kata sandi bawaan yang dikonfigurasikan pada `AKUN_UJI_PA
 | **Bidan RS** | `bidan.rs@uji.test` | Form pemulangan pasien (`/krs`) & riwayat KRS RS terkait |
 | **Bidan Kelurahan** | `bidan.gundih@uji.test` | Penugasan kunjungan 48 jam, form laporan bertoken (`/visit/[token]`) |
 | **Kepala Puskesmas** | `kapus.gundih@uji.test` | Supervisi wilayah puskesmas, batas SLA, eskalasi Red Alert |
-| **Admin Dinkes** | `dinkes@uji.test` | Dashboard agregat 10 KPI Kota Surabaya, filter kecamatan & puskesmas |
+| **Admin Dinkes** | `dinkes@uji.test` | Dashboard agregat 10 KPI Kota Surabaya, filter kecamatan & puskesmas, master faskes & akun (`/admin`) |
+
+Halaman `/admin` hanya dapat dibuka Superadmin Dinkes. Dari sana, master Puskesmas/RS/kelurahan dan akun tenaga kesehatan dapat ditambah; akun dapat diaktifkan atau dinonaktifkan.
 
 ---
 
