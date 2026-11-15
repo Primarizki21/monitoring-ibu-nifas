@@ -12,6 +12,9 @@ wheels/
 .env*
 !.env.example
 *.download
+# Backup database lokal; jangan pernah di-commit
+*.backup.gz
+*.dump
 .pytest_cache/
 
 # Local knowledge graph & artifacts

@@ -86,12 +86,12 @@ test("Bidan kelurahan mengisi laporan bertanda bahaya dari tab data", async ({ p
 
   const ms = await ukur(
     page,
-    () => page.getByRole("link", { name: "Data ibu nifas", exact: true }).click(),
+    () => page.getByRole("button", { name: "Data ibu nifas", exact: true }).click(),
     () => expect(page.getByRole("heading", { name: "Semua data ibu nifas" })).toBeVisible(),
   );
   console.log(`  pindah ke tab data: ${ms} ms`);
 
-  await page.getByRole("link", { name: /Menunggu kunjungan/ }).click();
+  await page.getByRole("button", { name: /Menunggu kunjungan/ }).click();
   const baris = page.getByRole("row", { name: new RegExp(NAMA.replace(/[()]/g, "\\$&")) });
   await expect(baris).toBeVisible();
   await baris.getByRole("link", { name: "Isi laporan" }).click();
@@ -113,7 +113,7 @@ test("Kepala Puskesmas melihat Red Alert, kartu indikator, dan menindaklanjuti",
   await expect(alert).toContainText(NAMA);
 
   // 10 kartu indikator PRD 8.1
-  const kartu = page.getByRole("region", { name: "Indikator utama" }).getByRole("link");
+  const kartu = page.getByRole("region", { name: "Indikator utama" }).getByRole("button");
   await expect(kartu).toHaveCount(10);
 
   await kartu.filter({ hasText: "Tanda bahaya nifas" }).click();
@@ -141,7 +141,7 @@ test("Dinkes: filter dan tab bekerja tanpa muat ulang halaman", async ({ page })
 
   await page.getByLabel("Puskesmas").selectOption({ label: "Puskesmas Gundih" });
   await expect(page).toHaveURL(/puskesmas_id=/);
-  await page.getByRole("link", { name: "Data ibu nifas", exact: true }).click();
+  await page.getByRole("button", { name: "Data ibu nifas", exact: true }).click();
   await expect(page).toHaveURL(/tab=data.*|.*puskesmas_id=.*tab=data/);
   await expect(page.getByRole("heading", { name: "Semua data ibu nifas" })).toBeVisible();
 
