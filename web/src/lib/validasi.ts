@@ -44,3 +44,49 @@ export const kunjunganSchema = z.object({
   catatan_kebidanan: z.string().trim().optional(),
   konfirmasi_jadwal_kontrol: z.iso.date({ error: "Pilih tanggal" }),
 });
+
+// Form admin Dinkes. Semua field faskes opsional di level skema; aturan role
+// ditegakkan di superRefine agar payload tidak bergantung pada UI.
+export const rolePenggunaSchema = z.enum(["SUPERADMIN_DINKES", "KEPALA_PUSKESMAS", "BIDAN_KELURAHAN", "BIDAN_RS"]);
+
+export const adminPuskesmasSchema = z.object({
+  nama_puskesmas: z.string().trim().min(2, "Nama Puskesmas wajib diisi"),
+  kecamatan: z.string().trim().min(2, "Kecamatan wajib diisi"),
+  no_telp_operasional: z.string().trim().max(20, "Nomor telepon maksimal 20 karakter").optional(),
+});
+
+export const adminRsSchema = z.object({
+  nama_rs: z.string().trim().min(2, "Nama RS wajib diisi"),
+  tipe_rs: z.string().trim().max(10, "Tipe RS maksimal 10 karakter").optional(),
+  kecamatan: z.string().trim().max(50, "Kecamatan maksimal 50 karakter").optional(),
+  alamat_rs: z.string().trim().max(500, "Alamat maksimal 500 karakter").optional(),
+});
+
+export const adminKelurahanSchema = z.object({
+  puskesmas_id: z.uuid("Pilih Puskesmas"),
+  nama_kelurahan: z.string().trim().min(2, "Nama kelurahan wajib diisi"),
+  kecamatan: z.string().trim().min(2, "Kecamatan wajib diisi"),
+});
+
+export const adminAkunSchema = z
+  .object({
+    nama_lengkap: z.string().trim().min(2, "Nama wajib diisi"),
+    email: z.string().trim().email("Email tidak valid"),
+    no_whatsapp: nomorWhatsapp,
+    role: rolePenggunaSchema,
+    password: z.string().min(8, "Kata sandi minimal 8 karakter"),
+    puskesmas_id: z.uuid().optional(),
+    rumah_sakit_id: z.uuid().optional(),
+    kelurahan_id: z.uuid().optional(),
+  })
+  .superRefine((v, ctx) => {
+    if (v.role === "KEPALA_PUSKESMAS" && !v.puskesmas_id) {
+      ctx.addIssue({ code: "custom", path: ["puskesmas_id"], message: "Pilih Puskesmas untuk Kepala Puskesmas" });
+    }
+    if (v.role === "BIDAN_RS" && !v.rumah_sakit_id) {
+      ctx.addIssue({ code: "custom", path: ["rumah_sakit_id"], message: "Pilih RS untuk Bidan RS" });
+    }
+    if (v.role === "BIDAN_KELURAHAN" && !v.kelurahan_id) {
+      ctx.addIssue({ code: "custom", path: ["kelurahan_id"], message: "Pilih kelurahan untuk Bidan Kelurahan" });
+    }
+  });

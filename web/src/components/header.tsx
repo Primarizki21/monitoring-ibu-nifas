@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ClipboardPlus, LayoutDashboard, LogOut } from "lucide-react";
+import { ClipboardPlus, LayoutDashboard, LogOut, Settings2 } from "lucide-react";
 import { Logo } from "@/components/aset/logo";
 import type { Profil } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -28,10 +28,11 @@ function inisial(nama: string) {
     .toUpperCase();
 }
 
-export function Header({ profil, aktif }: { profil: Profil; aktif: "krs" | "dashboard" }) {
+export function Header({ profil, aktif }: { profil: Profil; aktif: "krs" | "dashboard" | "admin" }) {
   const menu = [
     ...(profil.role === "BIDAN_RS" ? [{ href: "/krs", label: "Pulangkan pasien", ikon: ClipboardPlus, kunci: "krs" }] : []),
     { href: "/dashboard", label: "Dashboard", ikon: LayoutDashboard, kunci: "dashboard" },
+    ...(profil.role === "SUPERADMIN_DINKES" ? [{ href: "/admin", label: "Master & akun", ikon: Settings2, kunci: "admin" }] : []),
   ];
 
   return (

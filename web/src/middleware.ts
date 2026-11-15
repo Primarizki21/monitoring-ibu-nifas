@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { envSupabase } from "@/lib/env";
 
 // Halaman yang wajib login. /visit/[token] dan /api sengaja tidak dicakup.
-const HALAMAN_TERLINDUNG = ["/krs", "/dashboard"];
+const HALAMAN_TERLINDUNG = ["/krs", "/dashboard", "/admin"];
 
 // CSP dengan nonce: Next.js menyisipkan nonce ke skrip yang dirender dari header request `x-nonce`.
 // Origin Supabase ikut diizinkan agar Realtime berfungsi pada Supabase lokal (http/ws) maupun hosted.
