@@ -32,6 +32,7 @@ export function FilterDashboard({
       if (v) p.set(k, v);
       else p.delete(k);
     }
+    p.delete("page");
     startTransition(() => router.replace(`${pathname}?${p}`, { scroll: false }));
   }
 

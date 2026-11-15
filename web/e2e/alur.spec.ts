@@ -144,6 +144,13 @@ test("Dinkes: filter dan tab bekerja tanpa muat ulang halaman", async ({ page })
   await page.getByRole("button", { name: "Data ibu nifas", exact: true }).click();
   await expect(page).toHaveURL(/tab=data.*|.*puskesmas_id=.*tab=data/);
   await expect(page.getByRole("heading", { name: "Semua data ibu nifas" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Isi laporan" })).toHaveCount(0);
+
+  const [unduhan] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("link", { name: "Unduh CSV" }).click(),
+  ]);
+  expect(unduhan.suggestedFilename()).toMatch(/^sim-nifas-\d{4}-\d{2}-\d{2}-\d{4}-\d{2}-\d{2}\.csv$/);
 
   // Penanda di window tetap ada = navigasi sisi klien, bukan muat ulang penuh.
   expect(await page.evaluate(() => (window as unknown as { penanda?: number }).penanda)).toBe(1);

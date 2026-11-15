@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Activity,
   Ban,
@@ -23,7 +24,7 @@ import { IlustrasiRumah } from "@/components/aset/ilustrasi";
 import { Badge } from "@/components/badge";
 import { SlaRing } from "@/components/sla-ring";
 import type { Role } from "@/lib/auth";
-import { KATEGORI, type AlertAktif, type BarisPasien, type Kategori, type Metrics, type TitikGrafik } from "@/lib/data/dashboard";
+import type { AlertAktif, BarisPasien, Kategori, Metrics, TitikGrafik } from "@/lib/data/dashboard";
 import { formatWaktu } from "@/lib/wa/template";
 import { FilterDashboard } from "./filter";
 import { GrafikStatus, GrafikTren } from "./grafik-wrapper";
@@ -42,6 +43,10 @@ export type DataTampilan = {
   metrics: Metrics;
   chart_series: TitikGrafik[];
   pasien: BarisPasien[];
+  totalPasien: number;
+  halaman: number;
+  totalHalaman: number;
+  perHalaman: number;
   alerts: AlertAktif[];
   puskesmas: Opsi[] | null;
   kelurahan: (Opsi & { puskesmas_id: string })[] | null;
@@ -85,34 +90,52 @@ function tautan(params: Record<string, string>, ubah: Record<string, string | un
   return s ? `/dashboard?${s}` : "/dashboard";
 }
 
+function tautanEkspor(params: Record<string, string>, kategori?: Kategori) {
+  const p = new URLSearchParams(params);
+  p.delete("tab");
+  p.delete("page");
+  if (kategori) p.set("kategori", kategori);
+  else p.delete("kategori");
+  const s = p.toString();
+  return `/api/v1/dashboard/export${s ? `?${s}` : ""}`;
+}
+
 function persen(n: number, total: number) {
   return total ? `${((n / total) * 100).toFixed(1).replace(".", ",")}%` : "–";
 }
 
 export function TampilanDashboard(d: DataTampilan) {
-  const [tab, setTab] = useState<"ringkasan" | "data">(d.tab);
-  const [kategori, setKategori] = useState<Kategori | undefined>(d.kategori);
+  const router = useRouter();
+  const [memuat, mulaiTransisi] = useTransition();
+  const tab = d.tab;
+  const kategori = d.kategori;
   const sekarang = new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
   const gantiTab = (t: "ringkasan" | "data") => {
-    setTab(t);
-    if (typeof window !== "undefined") {
-      const url = tautan(d.params, { tab: t === "data" ? "data" : undefined, kategori: t === "data" ? kategori : undefined });
-      window.history.replaceState(null, "", url);
-    }
+    mulaiTransisi(() =>
+      router.replace(
+        tautan(d.params, {
+          tab: t === "data" ? "data" : undefined,
+          kategori: t === "data" ? kategori : undefined,
+          page: undefined,
+        }),
+        { scroll: false },
+      ),
+    );
   };
 
   const pilihKategori = (k?: Kategori) => {
-    setTab("data");
-    setKategori(k);
-    if (typeof window !== "undefined") {
-      const url = tautan(d.params, { tab: "data", kategori: k });
-      window.history.replaceState(null, "", url);
-    }
+    mulaiTransisi(() => router.replace(tautan(d.params, { tab: "data", kategori: k, page: undefined }), { scroll: false }));
+  };
+
+  const gantiHalaman = (halaman: number) => {
+    mulaiTransisi(() =>
+      router.replace(tautan(d.params, { tab: "data", kategori, page: halaman > 1 ? String(halaman) : undefined }), { scroll: false }),
+    );
   };
 
   return (
-    <main className={`mx-auto max-w-7xl space-y-4 px-3 pt-6 sm:px-4 ${d.alerts.length ? "pb-24" : "pb-12"}`}>
+    <main aria-busy={memuat} className={`mx-auto max-w-7xl space-y-4 px-3 pt-6 sm:px-4 ${d.alerts.length ? "pb-24" : "pb-12"}`}>
       <section className="kaca rounded-[2rem] p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -165,7 +188,7 @@ export function TampilanDashboard(d: DataTampilan) {
       {tab === "ringkasan" ? (
         <Ringkasan {...d} onPilihKategori={pilihKategori} onLihatSemua={() => gantiTab("data")} />
       ) : (
-        <TabData {...d} kategori={kategori} onPilihKategori={pilihKategori} />
+        <TabData {...d} kategori={kategori} onPilihKategori={pilihKategori} onGantiHalaman={gantiHalaman} memuat={memuat} />
       )}
     </main>
   );
@@ -243,6 +266,7 @@ function Ringkasan(d: DataTampilan & { onPilihKategori: (k?: Kategori) => void; 
       <TabelPasien
           pasien={d.pasien.slice(0, 6)}
           role={d.role}
+          mulai={1}
           judul="Data ibu nifas terbaru"
           sub={`6 kepulangan terakhir dari ${t} pada periode ini`}
           aksi={
@@ -290,14 +314,15 @@ const CHIP: { kategori?: Kategori; label: string; kunci: keyof Metrics }[] = [
   { kategori: "sehat", label: "Sehat", kunci: "sehat" },
 ];
 
-function TabData(d: DataTampilan & { kategori: Kategori | undefined; onPilihKategori: (k?: Kategori) => void }) {
+function TabData(
+  d: DataTampilan & {
+    kategori: Kategori | undefined;
+    onPilihKategori: (k?: Kategori) => void;
+    onGantiHalaman: (halaman: number) => void;
+    memuat: boolean;
+  },
+) {
   const aktif = CHIP.find((c) => c.kategori === d.kategori) ?? CHIP[0];
-
-  const pasienTampil = useMemo(() => {
-    if (!d.kategori) return d.pasien;
-    const [kolom, nilai] = KATEGORI[d.kategori];
-    return d.pasien.filter((p) => p[kolom] === nilai);
-  }, [d.pasien, d.kategori]);
 
   return (
     <>
@@ -316,12 +341,57 @@ function TabData(d: DataTampilan & { kategori: Kategori | undefined; onPilihKate
         ))}
       </nav>
       <TabelPasien
-        pasien={pasienTampil}
+        pasien={d.pasien}
         role={d.role}
+        mulai={(d.halaman - 1) * d.perHalaman + 1}
         judul={aktif.kategori ? `Ibu nifas: ${aktif.label.toLowerCase()}` : "Semua data ibu nifas"}
-        sub={`${pasienTampil.length} pasien, kepulangan terbaru di atas`}
+        sub={`${d.totalPasien} pasien, halaman ${d.halaman} dari ${d.totalHalaman}`}
+        aksi={
+          <a href={tautanEkspor(d.params, d.kategori)} className="btn-secondary min-h-11 px-4 py-2 text-sm">
+            Unduh CSV
+          </a>
+        }
       />
+      <Paginasi halaman={d.halaman} totalHalaman={d.totalHalaman} memuat={d.memuat} onGanti={d.onGantiHalaman} />
     </>
+  );
+}
+
+function Paginasi({
+  halaman,
+  totalHalaman,
+  memuat,
+  onGanti,
+}: {
+  halaman: number;
+  totalHalaman: number;
+  memuat: boolean;
+  onGanti: (halaman: number) => void;
+}) {
+  if (totalHalaman <= 1) return null;
+
+  return (
+    <nav aria-label="Navigasi halaman data" className="flex flex-wrap items-center justify-between gap-2 px-5 pb-5 sm:px-6">
+      <button
+        type="button"
+        disabled={halaman <= 1 || memuat}
+        onClick={() => onGanti(halaman - 1)}
+        className="btn-secondary min-h-11 px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Sebelumnya
+      </button>
+      <p aria-live="polite" className="text-sm tabular-nums text-tinta-redup">
+        Halaman {halaman} dari {totalHalaman}
+      </p>
+      <button
+        type="button"
+        disabled={halaman >= totalHalaman || memuat}
+        onClick={() => onGanti(halaman + 1)}
+        className="btn-secondary min-h-11 px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Berikutnya
+      </button>
+    </nav>
   );
 }
 
@@ -342,12 +412,14 @@ function JudulPanel({ ikon, judul, sub }: { ikon: React.ReactNode; judul: string
 function TabelPasien({
   pasien,
   role,
+  mulai,
   judul,
   sub,
   aksi,
 }: {
   pasien: BarisPasien[];
   role: Role;
+  mulai: number;
   judul: string;
   sub: string;
   aksi?: React.ReactNode;
@@ -366,9 +438,10 @@ function TabelPasien({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[960px] text-left text-sm">
+          <table className="w-full min-w-[1000px] text-left text-sm">
             <thead className="border-y border-white/70 bg-white/35 text-xs text-tinta-redup">
               <tr>
+                <th className="w-12 px-4 py-2.5 text-right font-semibold">No</th>
                 <th className="px-5 py-2.5 font-semibold">Nama ibu</th>
                 <th className="px-4 py-2.5 font-semibold">Alamat</th>
                 <th className="px-4 py-2.5 font-semibold">WhatsApp</th>
@@ -379,10 +452,11 @@ function TabelPasien({
               </tr>
             </thead>
             <tbody className="divide-y divide-white/60">
-              {pasien.map((p) => {
+              {pasien.map((p, i) => {
                 const belum = p.status_kunjungan === "PENDING" || p.status_kunjungan === "NOT_VISITED";
                 return (
                   <tr key={p.id} className="transition-colors hover:bg-white/45 [content-visibility:auto] [contain-intrinsic-size:auto_56px]">
+                    <td className="px-4 py-3 text-right tabular-nums text-tinta-redup">{mulai + i}</td>
                     <td className="px-5 py-3 font-semibold">{p.nama_ibu}</td>
                     <td className="max-w-56 px-4 py-3">
                       <span className="line-clamp-2">
@@ -404,7 +478,7 @@ function TabelPasien({
                     </td>
                     <td className="whitespace-nowrap px-5 py-3 text-right">
                       <div className="flex justify-end gap-2">
-                        {role === "BIDAN_KELURAHAN" && belum && (
+                        {role === "BIDAN_KELURAHAN" && belum && p.token_kunjungan && (
                           <Link href={`/visit/${p.token_kunjungan}`} className="rounded-lg bg-selat px-3 py-1.5 text-xs font-semibold text-white hover:bg-selat-tua">
                             Isi laporan
                           </Link>

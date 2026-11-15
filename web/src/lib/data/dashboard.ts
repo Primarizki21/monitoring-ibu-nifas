@@ -30,9 +30,18 @@ export type BarisPasien = {
   deadline_sla: string;
   status_kunjungan: string;
   status_kesehatan: string;
-  token_kunjungan: string;
+  token_kunjungan?: string;
   kelurahan: { nama_kelurahan: string } | null;
 };
+
+export type OpsiDaftarPasien = {
+  halaman: number;
+  perHalaman: number;
+  kategori?: Kategori;
+  sertakanToken?: boolean;
+};
+
+export type HasilDaftarPasien = { rows: BarisPasien[]; total: number };
 
 export type AlertAktif = {
   id: string;
@@ -139,17 +148,43 @@ export const KATEGORI = {
 } as const;
 export type Kategori = keyof typeof KATEGORI;
 
-export async function ambilDaftarPasien(db: SupabaseClient, f: Filter, batas = 100, kategori?: Kategori) {
-  let q = terapkanFilter(
-    db
-      .from("tr_discharge")
-      .select("id, nama_ibu, alamat_lengkap, no_whatsapp_ibu, waktu_krs, deadline_sla, status_kunjungan, status_kesehatan, token_kunjungan, kelurahan:m_kelurahan(nama_kelurahan)"),
-    f,
-  );
+const KOLOM_PASIEN = "id, nama_ibu, alamat_lengkap, no_whatsapp_ibu, waktu_krs, deadline_sla, status_kunjungan, status_kesehatan, kelurahan:m_kelurahan(nama_kelurahan)";
+
+function queryPasien(db: SupabaseClient, f: Filter, kategori?: Kategori, sertakanToken = false) {
+  const kolom = sertakanToken ? `${KOLOM_PASIEN}, token_kunjungan` : KOLOM_PASIEN;
+  let q = terapkanFilter(db.from("tr_discharge").select(kolom), f);
   if (kategori) q = q.eq(KATEGORI[kategori][0], KATEGORI[kategori][1]);
-  const { data, error } = await q.order("waktu_krs", { ascending: false }).limit(batas).returns<BarisPasien[]>();
+  return q;
+}
+
+export async function ambilDaftarPasien(db: SupabaseClient, f: Filter, opsi: OpsiDaftarPasien): Promise<HasilDaftarPasien> {
+  const perHalaman = Math.max(1, Math.min(opsi.perHalaman, 100));
+  const halaman = Math.max(1, opsi.halaman);
+  const awal = (halaman - 1) * perHalaman;
+  const { data, error, count } = await queryPasien(db, f, opsi.kategori, opsi.sertakanToken)
+    .order("waktu_krs", { ascending: false })
+    .range(awal, awal + perHalaman - 1)
+    .returns<BarisPasien[]>();
   if (error) throw error;
-  return data ?? [];
+  return { rows: data ?? [], total: count ?? 0 };
+}
+
+// Ekspor butuh seluruh baris, bukan satu halaman. PostgREST membatasi jumlah baris
+// per request, jadi ambil per 1.000 baris sampai habis.
+export async function ambilSemuaPasien(db: SupabaseClient, f: Filter, kategori?: Kategori): Promise<BarisPasien[]> {
+  const ukuran = 1000;
+  const rows: BarisPasien[] = [];
+  for (let awal = 0; ; awal += ukuran) {
+    const { data, error } = await queryPasien(db, f, kategori)
+      .order("waktu_krs", { ascending: false })
+      .range(awal, awal + ukuran - 1)
+      .returns<BarisPasien[]>();
+    if (error) throw error;
+    if (!data?.length) break;
+    rows.push(...data);
+    if (data.length < ukuran) break;
+  }
+  return rows;
 }
 
 export async function ambilAlertAktif(db: SupabaseClient) {
