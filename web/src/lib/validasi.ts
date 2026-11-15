@@ -68,25 +68,33 @@ export const adminKelurahanSchema = z.object({
   kecamatan: z.string().trim().min(2, "Kecamatan wajib diisi"),
 });
 
-export const adminAkunSchema = z
-  .object({
-    nama_lengkap: z.string().trim().min(2, "Nama wajib diisi"),
+const adminAkunDasar = z.object({
+  nama_lengkap: z.string().trim().min(2, "Nama wajib diisi"),
+  no_whatsapp: nomorWhatsapp,
+  role: rolePenggunaSchema,
+  puskesmas_id: z.uuid().optional(),
+  rumah_sakit_id: z.uuid().optional(),
+  kelurahan_id: z.uuid().optional(),
+});
+
+function aturanFaskes(v: z.infer<typeof adminAkunDasar>, ctx: z.RefinementCtx) {
+  if (v.role === "KEPALA_PUSKESMAS" && !v.puskesmas_id) {
+    ctx.addIssue({ code: "custom", path: ["puskesmas_id"], message: "Pilih Puskesmas untuk Kepala Puskesmas" });
+  }
+  if (v.role === "BIDAN_RS" && !v.rumah_sakit_id) {
+    ctx.addIssue({ code: "custom", path: ["rumah_sakit_id"], message: "Pilih RS untuk Bidan RS" });
+  }
+  if (v.role === "BIDAN_KELURAHAN" && !v.kelurahan_id) {
+    ctx.addIssue({ code: "custom", path: ["kelurahan_id"], message: "Pilih kelurahan untuk Bidan Kelurahan" });
+  }
+}
+
+export const adminAkunSchema = adminAkunDasar
+  .extend({
     email: z.string().trim().email("Email tidak valid"),
-    no_whatsapp: nomorWhatsapp,
-    role: rolePenggunaSchema,
     password: z.string().min(8, "Kata sandi minimal 8 karakter"),
-    puskesmas_id: z.uuid().optional(),
-    rumah_sakit_id: z.uuid().optional(),
-    kelurahan_id: z.uuid().optional(),
   })
-  .superRefine((v, ctx) => {
-    if (v.role === "KEPALA_PUSKESMAS" && !v.puskesmas_id) {
-      ctx.addIssue({ code: "custom", path: ["puskesmas_id"], message: "Pilih Puskesmas untuk Kepala Puskesmas" });
-    }
-    if (v.role === "BIDAN_RS" && !v.rumah_sakit_id) {
-      ctx.addIssue({ code: "custom", path: ["rumah_sakit_id"], message: "Pilih RS untuk Bidan RS" });
-    }
-    if (v.role === "BIDAN_KELURAHAN" && !v.kelurahan_id) {
-      ctx.addIssue({ code: "custom", path: ["kelurahan_id"], message: "Pilih kelurahan untuk Bidan Kelurahan" });
-    }
-  });
+  .superRefine(aturanFaskes);
+
+// Email tidak diubah dari halaman admin: mengganti email Auth butuh alur verifikasi tersendiri.
+export const adminAkunEditSchema = adminAkunDasar.superRefine(aturanFaskes);

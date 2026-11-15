@@ -159,3 +159,27 @@ test("Dinkes: filter dan tab bekerja tanpa muat ulang halaman", async ({ page })
   // Penanda di window tetap ada = navigasi sisi klien, bukan muat ulang penuh.
   expect(await page.evaluate(() => (window as unknown as { penanda?: number }).penanda)).toBe(1);
 });
+
+test("Dinkes mengubah akun dan audit tercatat", async ({ page }) => {
+  await masuk(page, "dinkes@uji.test");
+  await page.goto("/admin");
+
+  const tabelAkun = page.locator("table").first();
+  await tabelAkun.getByRole("row", { name: /Admin Dinkes/ }).getByText("Ubah akun").click();
+  const baris = tabelAkun.getByRole("row", { name: /Admin Dinkes/ });
+  await baris.getByLabel("Nama").fill("Admin Dinkes (UJI E2E)");
+  await baris.getByRole("button", { name: "Simpan akun" }).click();
+  await expect(page.getByRole("status")).toContainText("Akun diperbarui.");
+
+  const audit = page.locator("table").nth(1);
+  await expect(audit.getByRole("cell", { name: "Akun", exact: true }).first()).toBeVisible();
+  await expect(audit.getByRole("cell", { name: "Ubah", exact: true }).first()).toBeVisible();
+
+  // Kembalikan nama akun uji agar run berikutnya konsisten.
+  await page.goto("/admin");
+  const barisUbah = page.locator("table").first().getByRole("row", { name: /Admin Dinkes \(UJI E2E\)/ });
+  await barisUbah.getByText("Ubah akun").click();
+  await barisUbah.getByLabel("Nama").fill("Admin Dinkes");
+  await barisUbah.getByRole("button", { name: "Simpan akun" }).click();
+  await expect(page.getByRole("status")).toContainText("Akun diperbarui.");
+});
