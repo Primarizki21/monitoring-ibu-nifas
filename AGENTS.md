@@ -375,3 +375,7 @@ Sebelum menulis rencana atau menyentuh kode, identifikasi domain pekerjaan dan b
      - Agen **DILARANG KERAS** mengeksekusi `npx supabase db push` atau mengeksekusi migrasi langsung ke basis data remote.
      - `npx supabase db reset` **hanya boleh** dijalankan pada database lokal Docker untuk keperluan development; jangan pernah menjalankannya pada project hosted.
      - Perintah `npx supabase db push` **HANYA BOLEH DIJALANKAN SECARA MANUAL OLEH PENGGUNA (USER ONLY)**, dijalankan dari `web/` (atau `--workdir web`).
+4. **Kebijakan CI, Basis Data, dan Kredensial**:
+   - **Basis data di CI**: CI dilarang menjalankan query atau migrasi terhadap database hosted/produksi. Validasi skema hanya pada database ephemeral lokal dengan data sintetis; `db push` dan `db reset` tetap tunduk pada poin 3.
+   - **Kredensial**: Secret dilarang ditulis di kode, fixture test, atau nilai `NEXT_PUBLIC_*`. Sebelum push, diff terhadap branch tujuan wajib dipindai untuk pola kredensial.
+   - **Required checks**: `main` dilindungi `quality` dan `container` dengan opsi *Require branches to be up to date before merging*. Pengaturan ini berada di GitHub Settings (ruleset/branch protection), bukan di berkas workflow.
