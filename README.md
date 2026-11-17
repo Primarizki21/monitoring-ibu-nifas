@@ -159,7 +159,7 @@ Bidan Kelurahan melakukan pemeriksaan fisik langsung di rumah ibu nifas dalam re
 
 ### C. Klasifikasi Triase Deterministik
 - 🟢 **SEHAT**: Suhu tubuh $\le 38{,}0^\circ\text{C}$, seluruh checklist bahaya negatif, dan ibu dalam kondisi pemulihan wajar.
-- 🟡 **KOMPLIKASI**: Keluhan ringan/lokal non-fatal (puting lecet, payudara bengkak/bendungan ASI, nyeri luka jahitan ringan). Bidan memberikan asuhan mandiri dan pemantauan berkala.
+- 🟡 **KOMPLIKASI**: Hasil laporan kunjungan ketika bidan menyatakan ADA_MASALAH tanpa checklist tanda bahaya. Status ini tetap menandai kasus sebagai darurat dan memicu WA-EMERGENCY sesuai PRD §7.2.
 - 🔴 **TANDA BAHAYA (Red Alert)**: Memenuhi salah satu atau lebih tanda bahaya maternal. Sistem menerbitkan tiket darurat dan membunyikan alarm dashboard untuk respon cepat $< 15\text{ menit}$.
 
 ---
@@ -177,7 +177,7 @@ Bidan Kelurahan melakukan pemeriksaan fisik langsung di rumah ibu nifas dalam re
    - Endpoint `/api/cron` dilindungi menggunakan verifikasi header `Authorization: Bearer <CRON_SECRET>`.
 4. **Kepatuhan Privasi Data Medis (UU PDP No. 27/2022)**:
    - Seluruh transmisi jaringan menggunakan enkripsi TLS 1.3 (HTTPS).
-   - Data tersimpan terlindungi dengan enkripsi database at-rest.
+   - Data sensitif (NIK, riwayat diagnosis, nomor telepon) dienkripsi per kolom dengan AES-256 sesuai PRD §10, di samping enkripsi at-rest Supabase.
    - Setiap aktivitas pengiriman pesan WhatsApp tercatat dalam tabel audit `log_notifikasi_wa`.
 
 ---
