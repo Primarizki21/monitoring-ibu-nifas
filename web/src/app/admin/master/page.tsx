@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { ArrowLeft, Settings2, ShieldCheck } from "lucide-react";
 import { Header } from "@/components/header";
+import { catatAudit } from "@/lib/audit";
 import { wajibLogin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { adminKelurahanSchema, adminPuskesmasSchema, adminRsSchema, UUID } from "@/lib/validasi";
@@ -40,7 +41,7 @@ function idSah(formData: FormData) {
 
 async function ubahPuskesmas(formData: FormData) {
   "use server";
-  await pastikanDinkes();
+  const profil = await pastikanDinkes();
   const id = idSah(formData);
   const hasil = adminPuskesmasSchema.safeParse({
     nama_puskesmas: teks(formData, "nama_puskesmas"),
@@ -55,6 +56,7 @@ async function ubahPuskesmas(formData: FormData) {
     .update({ ...hasil.data, no_telp_operasional: hasil.data.no_telp_operasional ?? null })
     .eq("id", id);
   if (error) gagal(error.message);
+  await catatAudit(profil, "ubah", "m_puskesmas", id, { nama_puskesmas: hasil.data.nama_puskesmas, kecamatan: hasil.data.kecamatan });
   revalidateTag("master_data");
   revalidatePath("/admin");
   revalidatePath("/admin/master");
@@ -63,7 +65,7 @@ async function ubahPuskesmas(formData: FormData) {
 
 async function ubahRs(formData: FormData) {
   "use server";
-  await pastikanDinkes();
+  const profil = await pastikanDinkes();
   const id = idSah(formData);
   const hasil = adminRsSchema.safeParse({
     nama_rs: teks(formData, "nama_rs"),
@@ -84,6 +86,7 @@ async function ubahRs(formData: FormData) {
     })
     .eq("id", id);
   if (error) gagal(error.message);
+  await catatAudit(profil, "ubah", "m_rumah_sakit", id, { nama_rs: hasil.data.nama_rs });
   revalidateTag("master_data");
   revalidatePath("/admin");
   revalidatePath("/admin/master");
@@ -92,7 +95,7 @@ async function ubahRs(formData: FormData) {
 
 async function ubahKelurahan(formData: FormData) {
   "use server";
-  await pastikanDinkes();
+  const profil = await pastikanDinkes();
   const id = idSah(formData);
   const hasil = adminKelurahanSchema.safeParse({
     puskesmas_id: teks(formData, "puskesmas_id"),
@@ -104,6 +107,7 @@ async function ubahKelurahan(formData: FormData) {
   const db = await createClient();
   const { error } = await db.from("m_kelurahan").update(hasil.data).eq("id", id);
   if (error) gagal(error.message);
+  await catatAudit(profil, "ubah", "m_kelurahan", id, { nama_kelurahan: hasil.data.nama_kelurahan });
   revalidateTag("master_data");
   revalidatePath("/admin");
   revalidatePath("/admin/master");

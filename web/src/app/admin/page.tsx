@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { Building2, Hospital, MapPin, ShieldCheck, UserPlus, UsersRound } from "lucide-react";
+import { Building2, History, Hospital, MapPin, ShieldCheck, UserPlus, UsersRound } from "lucide-react";
 import { Header } from "@/components/header";
 import { Bagian, Field } from "@/components/form";
+import { catatAudit } from "@/lib/audit";
 import { wajibLogin, type Role } from "@/lib/auth";
 import { ambilMasterFaskes } from "@/lib/data/master";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
-import { adminAkunSchema, adminKelurahanSchema, adminPuskesmasSchema, adminRsSchema, UUID } from "@/lib/validasi";
+import { adminAkunEditSchema, adminAkunSchema, adminKelurahanSchema, adminPuskesmasSchema, adminRsSchema, UUID } from "@/lib/validasi";
 
 export const metadata = { title: "Master faskes & akun — SIM-NIFAS" };
 
@@ -30,6 +31,35 @@ type Pengguna = {
   is_active: boolean;
 };
 
+type Audit = {
+  id: number;
+  aktor_nama: string;
+  aksi: string;
+  target_tabel: string;
+  created_at: string;
+};
+
+const LABEL_AKSI: Record<string, string> = {
+  tambah: "Tambah",
+  ubah: "Ubah",
+  aktifkan: "Aktifkan",
+  nonaktifkan: "Nonaktifkan",
+  reset_sandi: "Reset sandi",
+};
+
+const LABEL_TARGET: Record<string, string> = {
+  m_puskesmas: "Puskesmas",
+  m_rumah_sakit: "RS",
+  m_kelurahan: "Kelurahan",
+  users: "Akun",
+};
+
+const WAKTU_AUDIT = new Intl.DateTimeFormat("id-ID", {
+  dateStyle: "short",
+  timeStyle: "short",
+  timeZone: "Asia/Jakarta",
+});
+
 function teks(formData: FormData, kunci: string) {
   const nilai = String(formData.get(kunci) ?? "").trim();
   return nilai || undefined;
@@ -51,7 +81,7 @@ async function pastikanDinkes() {
 
 async function tambahPuskesmas(formData: FormData) {
   "use server";
-  await pastikanDinkes();
+  const profil = await pastikanDinkes();
   const hasil = adminPuskesmasSchema.safeParse({
     nama_puskesmas: teks(formData, "nama_puskesmas"),
     kecamatan: teks(formData, "kecamatan"),
@@ -60,8 +90,9 @@ async function tambahPuskesmas(formData: FormData) {
   if (!hasil.success) gagal(hasil.error.issues[0]?.message ?? "Data Puskesmas tidak valid.");
 
   const db = await createClient();
-  const { error } = await db.from("m_puskesmas").insert(hasil.data);
+  const { data, error } = await db.from("m_puskesmas").insert(hasil.data).select("id").single();
   if (error) gagal(error.message);
+  await catatAudit(profil, "tambah", "m_puskesmas", data.id, { nama_puskesmas: hasil.data.nama_puskesmas });
   revalidateTag("master_data");
   revalidatePath("/admin");
   berhasil("Puskesmas ditambahkan.");
@@ -69,7 +100,7 @@ async function tambahPuskesmas(formData: FormData) {
 
 async function tambahRs(formData: FormData) {
   "use server";
-  await pastikanDinkes();
+  const profil = await pastikanDinkes();
   const hasil = adminRsSchema.safeParse({
     nama_rs: teks(formData, "nama_rs"),
     tipe_rs: teks(formData, "tipe_rs"),
@@ -79,8 +110,9 @@ async function tambahRs(formData: FormData) {
   if (!hasil.success) gagal(hasil.error.issues[0]?.message ?? "Data RS tidak valid.");
 
   const db = await createClient();
-  const { error } = await db.from("m_rumah_sakit").insert(hasil.data);
+  const { data, error } = await db.from("m_rumah_sakit").insert(hasil.data).select("id").single();
   if (error) gagal(error.message);
+  await catatAudit(profil, "tambah", "m_rumah_sakit", data.id, { nama_rs: hasil.data.nama_rs });
   revalidateTag("master_data");
   revalidatePath("/admin");
   berhasil("Rumah sakit ditambahkan.");
@@ -88,7 +120,7 @@ async function tambahRs(formData: FormData) {
 
 async function tambahKelurahan(formData: FormData) {
   "use server";
-  await pastikanDinkes();
+  const profil = await pastikanDinkes();
   const hasil = adminKelurahanSchema.safeParse({
     puskesmas_id: teks(formData, "puskesmas_id"),
     nama_kelurahan: teks(formData, "nama_kelurahan"),
@@ -97,8 +129,9 @@ async function tambahKelurahan(formData: FormData) {
   if (!hasil.success) gagal(hasil.error.issues[0]?.message ?? "Data kelurahan tidak valid.");
 
   const db = await createClient();
-  const { error } = await db.from("m_kelurahan").insert(hasil.data);
+  const { data, error } = await db.from("m_kelurahan").insert(hasil.data).select("id").single();
   if (error) gagal(error.message);
+  await catatAudit(profil, "tambah", "m_kelurahan", data.id, { nama_kelurahan: hasil.data.nama_kelurahan });
   revalidateTag("master_data");
   revalidatePath("/admin");
   berhasil("Kelurahan ditambahkan.");
@@ -106,7 +139,7 @@ async function tambahKelurahan(formData: FormData) {
 
 async function tambahAkun(formData: FormData) {
   "use server";
-  await pastikanDinkes();
+  const profil = await pastikanDinkes();
   const hasil = adminAkunSchema.safeParse({
     nama_lengkap: teks(formData, "nama_lengkap"),
     email: teks(formData, "email"),
@@ -144,6 +177,7 @@ async function tambahAkun(formData: FormData) {
     await admin.auth.admin.deleteUser(auth.user.id);
     gagal(eUser.message);
   }
+  await catatAudit(profil, "tambah", "users", auth.user.id, { nama_lengkap: a.nama_lengkap, email: a.email, role: a.role });
   revalidatePath("/admin");
   berhasil("Akun tenaga kesehatan dibuat.");
 }
@@ -159,13 +193,14 @@ async function ubahAktif(formData: FormData) {
   const db = await createClient();
   const { error } = await db.from("users").update({ is_active: aktif }).eq("id", id);
   if (error) gagal(error.message);
+  await catatAudit(profil, aktif ? "aktifkan" : "nonaktifkan", "users", id);
   revalidatePath("/admin");
   berhasil(aktif ? "Akun diaktifkan." : "Akun dinonaktifkan.");
 }
 
 async function resetPassword(formData: FormData) {
   "use server";
-  await pastikanDinkes();
+  const profil = await pastikanDinkes();
   const id = String(formData.get("id") ?? "");
   const password = String(formData.get("password") ?? "");
   if (!UUID.test(id)) gagal("ID akun tidak valid.");
@@ -174,8 +209,52 @@ async function resetPassword(formData: FormData) {
   const admin = createAdminClient();
   const { error } = await admin.auth.admin.updateUserById(id, { password });
   if (error) gagal(error.message);
+  await catatAudit(profil, "reset_sandi", "users", id);
   revalidatePath("/admin");
   berhasil("Kata sandi akun diperbarui.");
+}
+
+type AkunRingkas = Pick<Pengguna, "nama_lengkap" | "no_whatsapp" | "role" | "puskesmas_id" | "rumah_sakit_id" | "kelurahan_id">;
+
+async function ubahAkun(formData: FormData) {
+  "use server";
+  const profil = await pastikanDinkes();
+  const id = String(formData.get("id") ?? "");
+  if (!UUID.test(id)) gagal("ID akun tidak valid.");
+  const hasil = adminAkunEditSchema.safeParse({
+    nama_lengkap: teks(formData, "nama_lengkap"),
+    no_whatsapp: teks(formData, "no_whatsapp"),
+    role: teks(formData, "role"),
+    puskesmas_id: teks(formData, "puskesmas_id"),
+    rumah_sakit_id: teks(formData, "rumah_sakit_id"),
+    kelurahan_id: teks(formData, "kelurahan_id"),
+  });
+  if (!hasil.success) gagal(hasil.error.issues[0]?.message ?? "Data akun tidak valid.");
+
+  const a = hasil.data;
+  if (id === profil.id && a.role !== "SUPERADMIN_DINKES") gagal("Role akun sendiri tidak bisa diubah.");
+
+  const db = await createClient();
+  const { data: sebelum } = await db
+    .from("users")
+    .select("nama_lengkap, no_whatsapp, role, puskesmas_id, rumah_sakit_id, kelurahan_id")
+    .eq("id", id)
+    .maybeSingle<AkunRingkas>();
+  if (!sebelum) gagal("Akun tidak ditemukan.");
+
+  const sesudah: AkunRingkas = {
+    nama_lengkap: a.nama_lengkap,
+    no_whatsapp: a.no_whatsapp,
+    role: a.role,
+    puskesmas_id: a.role === "KEPALA_PUSKESMAS" ? (a.puskesmas_id ?? null) : null,
+    rumah_sakit_id: a.role === "BIDAN_RS" ? (a.rumah_sakit_id ?? null) : null,
+    kelurahan_id: a.role === "BIDAN_KELURAHAN" ? (a.kelurahan_id ?? null) : null,
+  };
+  const { error } = await db.from("users").update(sesudah).eq("id", id);
+  if (error) gagal(error.message);
+  await catatAudit(profil, "ubah", "users", id, { sebelum, sesudah });
+  revalidatePath("/admin");
+  berhasil("Akun diperbarui.");
 }
 
 export default async function AdminPage({ searchParams }: { searchParams: Promise<{ ok?: string; error?: string }> }) {
@@ -184,15 +263,22 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
   const q = await searchParams;
   const db = await createClient();
-  const [master, { data }] = await Promise.all([
+  const [master, { data }, { data: dataAudit }] = await Promise.all([
     ambilMasterFaskes(),
     db
       .from("users")
       .select("id, nama_lengkap, email, no_whatsapp, role, puskesmas_id, rumah_sakit_id, kelurahan_id, is_active")
       .order("created_at", { ascending: true })
       .returns<Pengguna[]>(),
+    db
+      .from("log_audit_admin")
+      .select("id, aktor_nama, aksi, target_tabel, created_at")
+      .order("created_at", { ascending: false })
+      .limit(50)
+      .returns<Audit[]>(),
   ]);
   const pengguna = data ?? [];
+  const audit = dataAudit ?? [];
 
   const namaFaskes = (u: Pengguna) => {
     if (u.role === "KEPALA_PUSKESMAS") return master.puskesmas.find((p) => p.id === u.puskesmas_id)?.nama_puskesmas ?? "-";
@@ -369,6 +455,42 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                         </button>
                       </form>
                       <details className="mt-1 text-left">
+                        <summary className="cursor-pointer text-xs font-semibold text-selat underline">Ubah akun</summary>
+                        <form action={ubahAkun} className="mt-2 grid min-w-64 gap-2">
+                          <input type="hidden" name="id" value={u.id} />
+                          <label className="text-xs font-semibold">Nama
+                            <input name="nama_lengkap" defaultValue={u.nama_lengkap} required className="input mt-1 px-2 py-1 text-xs" />
+                          </label>
+                          <label className="text-xs font-semibold">WhatsApp
+                            <input name="no_whatsapp" type="tel" defaultValue={u.no_whatsapp} required className="input mt-1 px-2 py-1 text-xs" />
+                          </label>
+                          <label className="text-xs font-semibold">Role
+                            <select name="role" defaultValue={u.role} required className="input mt-1 px-2 py-1 text-xs">
+                              {Object.entries(LABEL_ROLE).map(([role, label]) => <option key={role} value={role}>{label}</option>)}
+                            </select>
+                          </label>
+                          <label className="text-xs font-semibold">Puskesmas
+                            <select name="puskesmas_id" defaultValue={u.puskesmas_id ?? ""} className="input mt-1 px-2 py-1 text-xs">
+                              <option value="">-</option>
+                              {master.puskesmas.map((p) => <option key={p.id} value={p.id}>{p.nama_puskesmas}</option>)}
+                            </select>
+                          </label>
+                          <label className="text-xs font-semibold">RS
+                            <select name="rumah_sakit_id" defaultValue={u.rumah_sakit_id ?? ""} className="input mt-1 px-2 py-1 text-xs">
+                              <option value="">-</option>
+                              {master.rs.map((r) => <option key={r.id} value={r.id}>{r.nama_rs}</option>)}
+                            </select>
+                          </label>
+                          <label className="text-xs font-semibold">Kelurahan
+                            <select name="kelurahan_id" defaultValue={u.kelurahan_id ?? ""} className="input mt-1 px-2 py-1 text-xs">
+                              <option value="">-</option>
+                              {master.kelurahan.map((k) => <option key={k.id} value={k.id}>{k.nama_kelurahan}</option>)}
+                            </select>
+                          </label>
+                          <button className="btn-primary min-h-11 text-xs">Simpan akun</button>
+                        </form>
+                      </details>
+                      <details className="mt-1 text-left">
                         <summary className="cursor-pointer text-xs font-semibold text-selat underline">Reset sandi</summary>
                         <form action={resetPassword} className="mt-2 flex justify-end gap-1">
                           <input type="hidden" name="id" value={u.id} />
@@ -386,6 +508,42 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                         </form>
                       </details>
                     </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="kaca overflow-hidden rounded-[var(--radius-kaca)]">
+          <div className="p-5 sm:p-6">
+            <h2 className="flex items-center gap-2.5 font-display text-lg font-semibold text-selat">
+              <span className="grid size-8 place-items-center rounded-lg bg-selat/10" aria-hidden="true"><History className="size-4.5" /></span>
+              Audit tindakan admin
+            </h2>
+            <p className="mt-1 text-sm text-tinta-redup">50 perubahan terakhir master faskes dan akun. Waktu dalam WIB.</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] text-left text-sm">
+              <thead className="border-y border-white/70 bg-white/35 text-xs text-tinta-redup">
+                <tr>
+                  <th className="px-5 py-2.5 font-semibold">Waktu</th>
+                  <th className="px-4 py-2.5 font-semibold">Admin</th>
+                  <th className="px-4 py-2.5 font-semibold">Tindakan</th>
+                  <th className="px-5 py-2.5 font-semibold">Target</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/60">
+                {audit.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-5 py-6 text-center text-tinta-redup">Belum ada perubahan tercatat.</td>
+                  </tr>
+                ) : audit.map((a) => (
+                  <tr key={a.id}>
+                    <td className="px-5 py-3 tabular-nums">{WAKTU_AUDIT.format(new Date(a.created_at))}</td>
+                    <td className="px-4 py-3">{a.aktor_nama}</td>
+                    <td className="px-4 py-3">{LABEL_AKSI[a.aksi] ?? a.aksi}</td>
+                    <td className="px-5 py-3">{LABEL_TARGET[a.target_tabel] ?? a.target_tabel}</td>
                   </tr>
                 ))}
               </tbody>

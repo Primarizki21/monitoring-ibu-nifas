@@ -295,7 +295,7 @@ Semua akun menggunakan kata sandi bawaan yang dikonfigurasikan pada `AKUN_UJI_PA
 | **Kepala Puskesmas** | `kapus.gundih@uji.test` | Supervisi wilayah puskesmas, batas SLA, eskalasi Red Alert |
 | **Admin Dinkes** | `dinkes@uji.test` | Dashboard agregat 10 KPI Kota Surabaya, filter kecamatan & puskesmas, master faskes & akun (`/admin`) |
 
-Halaman `/admin` hanya dapat dibuka Superadmin Dinkes. Dari sana, master Puskesmas/RS/kelurahan dan akun tenaga kesehatan dapat ditambah; akun dapat diaktifkan, dinonaktifkan, atau direset kata sandinya. Halaman `/admin/master` dipakai untuk mengubah data master faskes yang sudah ada.
+Halaman `/admin` hanya dapat dibuka Superadmin Dinkes. Dari sana, master Puskesmas/RS/kelurahan dan akun tenaga kesehatan dapat ditambah; profil akun (nama, WhatsApp, role, faskes) dapat diubah; akun dapat diaktifkan, dinonaktifkan, atau direset kata sandinya. Setiap perubahan master faskes dan akun tercatat di tabel `log_audit_admin` dan tampil di bagian "Audit tindakan admin". Role akun sendiri tidak bisa diturunkan dari halaman ini. Halaman `/admin/master` dipakai untuk mengubah data master faskes yang sudah ada.
 
 ---
 
