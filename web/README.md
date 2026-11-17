@@ -91,20 +91,24 @@ Semua pesan masuk ke `log_notifikasi_wa` (status `QUEUED`), lalu dikirim worker 
 - Tanpa `FONNTE_TOKEN`, pesan tetap `QUEUED` dan tidak menghabiskan jatah retry.
 - `SENT` berarti diterima antrean Fonnte, belum tentu sampai ke HP penerima.
 
-`GET /api/cron` (header `Authorization: Bearer <CRON_SECRET>`) menjalankan pengingat 24 jam, eskalasi 48 jam, penandaan `NOT_VISITED`, lalu mengirim antrean. Panggil tiap menit dari Supabase:
+`GET /api/cron` (header `Authorization: Bearer <CRON_SECRET>`) menjalankan pengingat 24 jam, eskalasi 48 jam, penandaan `NOT_VISITED`, lalu mengirim antrean. Endpoint ini dipanggil tiap menit.
 
-```sql
-create extension if not exists pg_cron;
-create extension if not exists pg_net;
-select vault.create_secret('<CRON_SECRET>', 'cron_secret');
-select cron.schedule('sim-nifas-tiap-menit', '* * * * *', $$
-  select net.http_get(
-    url := 'https://<domain-aplikasi>/api/cron',
-    headers := jsonb_build_object('Authorization', 'Bearer ' ||
-      (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret'))
-  );
-$$);
+Migration `20261117114217_aktivasi_cron.sql` mengaktifkan `pg_cron` dan `pg_net` bila tersedia di server. Migration tidak menyimpan URL aplikasi maupun `CRON_SECRET`. Bila ekstensi tidak tersedia, migration melewatkannya tanpa error dan jadwal belum bisa dipasang sampai ekstensi tersedia.
+
+Lokal (Supabase Docker): panggil manual, tanpa menjadwalkan job.
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron
 ```
+
+Hosted: jalankan migrasi dengan `npx supabase db push`, lalu pasang jadwal dari folder `web/`:
+
+```bash
+DATABASE_URL='postgresql://postgres:<password>@<host>:5432/postgres' \
+  node --env-file=.env.local scripts/pasang-jadwal-cron.mjs
+```
+
+`DATABASE_URL` adalah connection string PostgreSQL ke database `postgres`. Kata sandi harus percent-encoded. Isi di `.env.local` atau di shell, jangan di repo. Tanpa `DATABASE_URL`, skrip memakai Supabase lokal (`--local`). Skrip membaca `NEXT_PUBLIC_APP_URL` dan `CRON_SECRET` dari `.env.local`, menyimpan secret sebagai `cron_secret` di Vault lewat `create_secret` / `update_secret`, lalu mengganti job `sim-nifas-tiap-menit` tiap menit dengan `pg_net` ke `<NEXT_PUBLIC_APP_URL>/api/cron`. Secret tidak pernah dicetak. Aman dijalankan ulang.
 
 ## Uji end-to-end
 
