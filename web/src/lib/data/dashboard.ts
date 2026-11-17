@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { dekripsiBanyak } from "@/lib/kripto";
 
 // Data dashboard (PRD 8 & 9.4). Selalu memakai klien pengguna, sehingga RLS membatasi
 // cakupan otomatis: Dinkes = kota, Kepala Puskesmas = puskesmas, Bidan = kelurahan, Bidan RS = RS-nya.
@@ -157,6 +158,13 @@ function queryPasien(db: SupabaseClient, f: Filter, kategori?: Kategori, sertaka
   return q;
 }
 
+async function dekripsiWaPasien(db: SupabaseClient, rows: BarisPasien[]) {
+  const wa = await dekripsiBanyak(db, rows.map((r) => r.no_whatsapp_ibu));
+  rows.forEach((r, i) => {
+    r.no_whatsapp_ibu = wa[i];
+  });
+}
+
 export async function ambilDaftarPasien(db: SupabaseClient, f: Filter, opsi: OpsiDaftarPasien): Promise<HasilDaftarPasien> {
   const perHalaman = Math.max(1, Math.min(opsi.perHalaman, 100));
   const halaman = Math.max(1, opsi.halaman);
@@ -166,7 +174,9 @@ export async function ambilDaftarPasien(db: SupabaseClient, f: Filter, opsi: Ops
     .range(awal, awal + perHalaman - 1)
     .returns<BarisPasien[]>();
   if (error) throw error;
-  return { rows: data ?? [], total: count ?? 0 };
+  const rows = data ?? [];
+  await dekripsiWaPasien(db, rows);
+  return { rows, total: count ?? 0 };
 }
 
 // Ekspor butuh seluruh baris, bukan satu halaman. PostgREST membatasi jumlah baris
@@ -184,6 +194,7 @@ export async function ambilSemuaPasien(db: SupabaseClient, f: Filter, kategori?:
     rows.push(...data);
     if (data.length < ukuran) break;
   }
+  await dekripsiWaPasien(db, rows);
   return rows;
 }
 
@@ -195,5 +206,10 @@ export async function ambilAlertAktif(db: SupabaseClient) {
     .order("waktu_laporan", { ascending: false })
     .returns<AlertAktif[]>();
   if (error) throw error;
-  return data ?? [];
+  const hasil = data ?? [];
+  const wa = await dekripsiBanyak(db, hasil.map((a) => a.discharge?.no_whatsapp_ibu ?? null));
+  hasil.forEach((a, i) => {
+    if (a.discharge && wa[i]) a.discharge.no_whatsapp_ibu = wa[i];
+  });
+  return hasil;
 }

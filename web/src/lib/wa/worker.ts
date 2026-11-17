@@ -2,6 +2,7 @@ import { env } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/server";
 import { kirimWa } from "./fonnte";
 import { waNomorPasienGagal } from "./template";
+import { dekripsiBanyak } from "@/lib/kripto";
 
 // 1 kiriman awal + 3 percobaan ulang (PRD 10).
 const MAKS_PERCOBAAN = 4;
@@ -31,9 +32,11 @@ export async function prosesAntreanWa(batas = 20, db: Db = createAdminClient()):
   if (error) throw error;
 
   // Berurutan, bukan paralel: kiriman beruntun dari satu nomor rawan diblokir WhatsApp.
-  for (const baris of (data ?? []) as BarisAntrean[]) {
+  const antrean = (data ?? []) as BarisAntrean[];
+  const pesan = await dekripsiBanyak(db, antrean.map((b) => b.pesan_terkirim));
+  for (const [i, baris] of antrean.entries()) {
     ringkasan.diproses++;
-    const hasil = await kirimWa(baris.nomor_tujuan, baris.pesan_terkirim);
+    const hasil = await kirimWa(baris.nomor_tujuan, pesan[i]);
 
     if (hasil.ok) {
       ringkasan.terkirim++;

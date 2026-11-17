@@ -68,7 +68,7 @@ Sistem memakai **gateway notifikasi outbound**, bukan bot percakapan dua arah.
 - Tidak ada webhook balasan pasien dan tidak ada mesin skrining interaktif pada fase ini.
 - Adaptor Meta Cloud API boleh ditambahkan nanti sebagai adapter baru; jangan mengklaim Meta sudah aktif.
 
-Template yang dipakai: `WA-ASSIGN-01`, `WA-REMIND-24H`, `WA-ALERT-48H`, `WA-EDU-PASIEN`, `WA-EMERGENCY`. Teks lengkap ada di PRD §6.2 dan `web/src/lib/wa/template.ts`.
+Template yang dipakai: `WA-ASSIGN-01`, `WA-REMIND-24H`, `WA-ALERT-48H`, `WA-EDU-PASIEN`, `WA-EMERGENCY`, dan `WA-PASIEN-GAGAL` untuk kegagalan WA pasien (PRD §7.3, lihat `docs/adr/0001-template-wa-pasien-gagal.md`). Teks lengkap ada di PRD §6.2 dan `web/src/lib/wa/template.ts`.
 
 ---
 
@@ -95,7 +95,7 @@ Template yang dipakai: `WA-ASSIGN-01`, `WA-REMIND-24H`, `WA-ALERT-48H`, `WA-EDU-
 
 ### B. Aplikasi Web
 - Direktori `web/` (Next.js 15 App Router, TypeScript, Tailwind v4).
-- Skema database: `web/supabase/migrations/` (4 migrasi, 8 tabel, RLS, trigger SLA/triase, RPC analitik).
+- Skema database: `web/supabase/migrations/` (8 migrasi, 9 tabel termasuk `log_audit_admin`, RLS, trigger SLA/triase, RPC analitik, enkripsi kolom, ekstensi penjadwal).
 - Uji E2E: `web/e2e/alur.spec.ts`.
 
 ### C. Database Lokal (Wajib untuk Development)
@@ -122,7 +122,12 @@ node --env-file=.env.local scripts/buat-akun-uji.mjs
 npm run dev
 ```
 
-Perintah lokal: `npx supabase stop`, `npx supabase status`, `npx supabase db reset`.
+Perintah lokal: `npx supabase start`, `npx supabase stop`, `npx supabase status`, `npx supabase migration up --local`, `npx supabase db reset`.
+
+`npx supabase db push` **bukan** perintah development. Perintah itu hanya untuk project hosted yang sudah di-link; tanpa link ia gagal dengan `Cannot find project ref`. Gunakan `migration up --local` atau `db reset` untuk pekerjaan harian. Agen tidak boleh menjalankan `supabase link`, `db push`, atau meminta kredensialnya. Pengguna melakukan keduanya manual saat pilot, setelah project hosted aktif. Project lama `iczsoiqjzrlqlcjkyuku` sudah mati dan tidak boleh dipakai sebagai target.
+
+Setelah `db reset`, hapus `web/.next/cache` bila opsi kelurahan di `/krs` masih memakai UUID lama (`ambilMasterFaskes` meng-cache master 24 jam).
+
 Jangan commit `.env.local`, file dump, atau backup database.
 
 ### D. Pengujian
@@ -177,7 +182,7 @@ Teks pesan mengikuti PRD §6.2. Jangan menambah template KF atau pesan skrining 
 4. **WhatsApp**: Fonnte (`web/src/lib/wa/fonnte.ts`), antrean `log_notifikasi_wa`, worker `web/src/lib/wa/worker.ts`, cron SLA `web/src/lib/wa/sla.ts`.
 5. **CSP**: `web/src/middleware.ts`. Origin Supabase lokal (`http://127.0.0.1:54321` dan `ws://127.0.0.1:54321`) wajib diizinkan pada `connect-src` agar Realtime berfungsi.
 6. **Deployment**: Dockerfile standalone non-root, `docker-compose.yml`, dan CI/CD. Target hosting belum ditetapkan; job deploy nonaktif sampai `DEPLOY_ENABLED=true`.
-7. **Prinsip operasional**: tidak terikat SIMPUS/SatuSehat pada fase pilot. Export data tersedia sebagai backlog PRD, bukan fitur yang sudah selesai.
+7. **Prinsip operasional**: tidak terikat SIMPUS/SatuSehat pada fase pilot. Export CSV (`GET /api/v1/dashboard/export`) sudah diimplementasikan dan diuji, bukan backlog.
 
 ---
 

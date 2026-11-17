@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import { dekripsi, dekripsiBanyak } from "@/lib/kripto";
 
 // Data ringkas pasien untuk form kunjungan bertoken (PRD 9.2). Dibaca dengan service role
 // karena bidan membuka tautan tanpa login; token 64 hex menjadi kuncinya.
@@ -39,7 +40,8 @@ const TOKEN_VALID = /^[0-9a-f]{64}$/;
 export async function ambilKunjungan(token: string): Promise<DataKunjungan | null> {
   if (!TOKEN_VALID.test(token)) return null;
 
-  const { data: d } = await createAdminClient()
+  const db = createAdminClient();
+  const { data: d } = await db
     .from("tr_discharge")
     .select(
       `id, nama_ibu, alamat_lengkap, no_whatsapp_ibu, diagnosis_sebelum_pulang, diagnosis_perawatan,
@@ -54,20 +56,29 @@ export async function ambilKunjungan(token: string): Promise<DataKunjungan | nul
     .maybeSingle();
   if (!d) return null;
 
+  const [noWhatsapp, diagnosisRs, diagnosisPerawatan, rekomendasiRs] = await dekripsiBanyak(db, [
+    d.no_whatsapp_ibu,
+    d.diagnosis_sebelum_pulang,
+    d.diagnosis_perawatan,
+    d.rekomendasi_perawatan_rumah,
+  ]);
   const kelurahan = d.kelurahan as unknown as { nama_kelurahan: string } | null;
   const rs = d.rs as unknown as { nama_rs: string } | null;
   // Relasi 1-1 (discharge_id unik) dikembalikan sebagai objek, bukan array.
   const laporan = d.laporan as unknown as LaporanKunjungan | null;
+  if (laporan?.catatan_kebidanan) {
+    laporan.catatan_kebidanan = await dekripsi(db, laporan.catatan_kebidanan);
+  }
 
   return {
     discharge_id: d.id,
     nama_ibu: d.nama_ibu,
     alamat: kelurahan ? `${d.alamat_lengkap}, Kel. ${kelurahan.nama_kelurahan}` : d.alamat_lengkap,
-    no_whatsapp_ibu: d.no_whatsapp_ibu,
+    no_whatsapp_ibu: noWhatsapp,
     nama_rs: rs?.nama_rs ?? "-",
-    diagnosis_rs: d.diagnosis_sebelum_pulang,
-    diagnosis_perawatan: d.diagnosis_perawatan,
-    rekomendasi_rs: d.rekomendasi_perawatan_rumah,
+    diagnosis_rs: diagnosisRs,
+    diagnosis_perawatan: diagnosisPerawatan,
+    rekomendasi_rs: rekomendasiRs,
     waktu_krs: d.waktu_krs,
     deadline_sla: d.deadline_sla,
     jadwal_kunjungan_ulang: d.jadwal_kunjungan_ulang,
