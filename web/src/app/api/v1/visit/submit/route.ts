@@ -5,6 +5,7 @@ import { galat } from "@/lib/http";
 import { kunjunganSchema } from "@/lib/validasi";
 import { waEmergency } from "@/lib/wa/template";
 import { prosesAntreanWa } from "@/lib/wa/worker";
+import { dekripsi } from "@/lib/kripto";
 
 // PRD 9.3 — simpan laporan kunjungan rumah. Status SLA & triase dihitung trigger database.
 export async function POST(req: NextRequest) {
@@ -22,6 +23,7 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
   if (!d) return galat(404, "not_found", "Tautan kunjungan tidak ditemukan.");
   if (new Date(d.token_expires_at) < new Date()) return galat(410, "gone", "Tautan kunjungan sudah kadaluarsa (lebih dari 7 hari).");
+
 
   // Token hanya bisa dipakai submit sekali: discharge_id unik di tr_home_visit (PRD 7.3).
   const { error } = await db.from("tr_home_visit").insert({ discharge_id: d.id, ...laporan });
@@ -57,6 +59,7 @@ type Db = ReturnType<typeof createAdminClient>;
 type DischargeDarurat = { id: string; nama_ibu: string; alamat_lengkap: string; no_whatsapp_ibu: string; puskesmas_id: string; bidan_kelurahan_id: string | null };
 
 async function antrekanDarurat(db: Db, d: DischargeDarurat) {
+  const waIbu = await dekripsi(db, d.no_whatsapp_ibu);
   const { data: alert } = await db
     .from("tr_emergency_alert")
     .select("jenis_masalah, waktu_laporan")
@@ -73,7 +76,7 @@ async function antrekanDarurat(db: Db, d: DischargeDarurat) {
   const pesan = waEmergency({
     nama_ibu: d.nama_ibu,
     alamat_lengkap: d.alamat_lengkap,
-    no_whatsapp: d.no_whatsapp_ibu,
+    no_whatsapp: waIbu,
     deskripsi_gejala_bahaya: alert?.jenis_masalah ?? "-",
     timestamp_laporan: alert?.waktu_laporan ?? new Date().toISOString(),
   });

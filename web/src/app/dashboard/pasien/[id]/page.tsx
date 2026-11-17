@@ -9,6 +9,7 @@ import { SlaRing } from "@/components/sla-ring";
 import { wajibLogin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatTanggal, formatWaktu } from "@/lib/wa/template";
+import { dekripsi, dekripsiBanyak } from "@/lib/kripto";
 
 // Status lanjutan yang dicatat nakes setelah kunjungan (PRD 3, Tahap 6).
 const STATUS_LANJUTAN = ["SEHAT", "KOMPLIKASI", "TANDA_BAHAYA", "DIRAWAT_KEMBALI", "MENINGGAL"] as const;
@@ -72,6 +73,15 @@ export default async function DetailPasien({ params }: { params: Promise<{ id: s
 
   const laporan = d.laporan as Record<string, string | number | boolean | null> | null;
   const alerts = ((d.alerts ?? []) as Alert[]).sort((a, b) => Number(a.is_resolved) - Number(b.is_resolved));
+
+  const [nik, waIbu, diagnosisSebelum, diagnosisPerawatan, rekomendasi] = await dekripsiBanyak(db, [
+    d.nik,
+    d.no_whatsapp_ibu,
+    d.diagnosis_sebelum_pulang,
+    d.diagnosis_perawatan,
+    d.rekomendasi_perawatan_rumah,
+  ]);
+  const catatan = laporan?.catatan_kebidanan ? await dekripsi(db, String(laporan.catatan_kebidanan)) : null;
   const nakes = PERAN_NAKES.includes(profil.role);
   const belumDikunjungi = d.status_kunjungan === "PENDING" || d.status_kunjungan === "NOT_VISITED";
 
@@ -89,16 +99,16 @@ export default async function DetailPasien({ params }: { params: Promise<{ id: s
             <SlaRing waktuKrs={d.waktu_krs} deadline={d.deadline_sla} statusKunjungan={d.status_kunjungan} durasiJam={laporan?.durasi_jam_sejak_krs as number | undefined} />
             <div className="min-w-0 flex-1">
               <h1 className="font-display text-3xl font-semibold tracking-tight text-selat-tua">{d.nama_ibu}</h1>
-              <p className="text-sm tabular-nums text-tinta-redup">NIK {d.nik}</p>
+              <p className="text-sm tabular-nums text-tinta-redup">NIK {nik}</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <Badge status={d.status_kesehatan} />
                 <Badge status={d.status_kunjungan} />
                 {d.is_readmission && <span className="rounded-full bg-sky-50/80 px-2.5 py-1 text-xs font-semibold text-sky-800 ring-1 ring-sky-600/25">Perawatan berulang</span>}
               </div>
             </div>
-            <a href={`https://wa.me/${d.no_whatsapp_ibu.replace("+", "")}`} className="btn-secondary self-start sm:self-center">
+            <a href={`https://wa.me/${waIbu.replace("+", "")}`} className="btn-secondary self-start sm:self-center">
               <MessageCircle className="size-4" aria-hidden="true" />
-              {d.no_whatsapp_ibu}
+              {waIbu}
             </a>
           </div>
         </section>
@@ -152,9 +162,9 @@ export default async function DetailPasien({ params }: { params: Promise<{ id: s
 
           <Panel ikon={<Stethoscope className="size-4.5" />} judul={`Dari ${d.rs?.nama_rs ?? "rumah sakit"}`}>
             <Item label="Pulang">{formatWaktu(d.waktu_krs)}</Item>
-            <Item label="Diagnosis sebelum pulang">{d.diagnosis_sebelum_pulang}</Item>
-            <Item label="Diagnosis perawatan">{d.diagnosis_perawatan}</Item>
-            <Item label="Anjuran perawatan di rumah">{d.rekomendasi_perawatan_rumah}</Item>
+            <Item label="Diagnosis sebelum pulang">{diagnosisSebelum}</Item>
+            <Item label="Diagnosis perawatan">{diagnosisPerawatan}</Item>
+            <Item label="Anjuran perawatan di rumah">{rekomendasi}</Item>
           </Panel>
 
           <Panel ikon={<ClipboardList className="size-4.5" />} judul="Laporan kunjungan rumah">
@@ -175,7 +185,7 @@ export default async function DetailPasien({ params }: { params: Promise<{ id: s
                     .join(", ") || "Tidak ditemukan"}
                 </Item>
                 <Item label="Hasil">{laporan.status_hasil === "BAIK" ? "Baik" : "Ada masalah"}</Item>
-                {laporan.catatan_kebidanan && <Item label="Catatan kebidanan">{String(laporan.catatan_kebidanan)}</Item>}
+                {catatan && <Item label="Catatan kebidanan">{catatan}</Item>}
               </>
             ) : (
               <div className="py-2 text-center">

@@ -6,6 +6,11 @@ language sql stable security definer set search_path = public, extensions, vault
     select decrypted_secret from vault.decrypted_secrets where name = 'nifas_encryption_key'
 $$;
 
+create or replace function kunci_enkripsi_nifas() returns text
+language sql stable security definer set search_path = public, extensions, vault as $$
+    select decrypted_secret from vault.decrypted_secrets where name = 'nifas_encryption_key'
+$$;
+
 create or replace function enkripsi_nifas(p_teks text) returns text
 language sql stable security definer set search_path = public, extensions, vault as $$
     select case
