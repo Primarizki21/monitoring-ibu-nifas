@@ -122,7 +122,12 @@ node --env-file=.env.local scripts/buat-akun-uji.mjs
 npm run dev
 ```
 
-Perintah lokal: `npx supabase stop`, `npx supabase status`, `npx supabase db reset`.
+Perintah lokal: `npx supabase start`, `npx supabase stop`, `npx supabase status`, `npx supabase migration up --local`, `npx supabase db reset`.
+
+`npx supabase db push` **bukan** perintah development. Perintah itu hanya untuk project hosted yang sudah di-link; tanpa link ia gagal dengan `Cannot find project ref`. Gunakan `migration up --local` atau `db reset` untuk pekerjaan harian. Agen tidak boleh menjalankan `supabase link`, `db push`, atau meminta kredensialnya. Pengguna melakukan keduanya manual saat pilot, setelah project hosted aktif. Project lama `iczsoiqjzrlqlcjkyuku` sudah mati dan tidak boleh dipakai sebagai target.
+
+Setelah `db reset`, hapus `web/.next/cache` bila opsi kelurahan di `/krs` masih memakai UUID lama (`ambilMasterFaskes` meng-cache master 24 jam).
+
 Jangan commit `.env.local`, file dump, atau backup database.
 
 ### D. Pengujian
