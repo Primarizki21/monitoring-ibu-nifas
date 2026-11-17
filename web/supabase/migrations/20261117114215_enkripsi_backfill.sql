@@ -11,6 +11,17 @@ begin
     end if;
 end $$;
 
+do $$
+begin
+    if not exists (select 1 from vault.decrypted_secrets where name = 'nifas_encryption_key') then
+        perform vault.create_secret(
+            encode(extensions.gen_random_bytes(32), 'hex'),
+            'nifas_encryption_key',
+            'Kunci AES-256 untuk kolom sensitif SIM-NIFAS'
+        );
+    end if;
+end $$;
+
 -- Semua ekspresi SET membaca nilai lama, jadi hash dihitung dari NIK plaintext.
 update tr_discharge
    set nik_hash = hash_nik(nik),
