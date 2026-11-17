@@ -1,10 +1,6 @@
 -- PRD 10: enkripsi AES-256 pada kolom sensitif (NIK, telepon, riwayat diagnosis).
 -- Kunci dibuat secara acak di Vault oleh migrasi data berikutnya; tidak pernah
 -- disimpan di kode, environment aplikasi, atau file migrasi ini.
-create or replace function kunci_enkripsi_nifas() returns text
-language sql stable security definer set search_path = public, extensions, vault as $$
-    select decrypted_secret from vault.decrypted_secrets where name = 'nifas_encryption_key'
-$$;
 
 create or replace function kunci_enkripsi_nifas() returns text
 language sql stable security definer set search_path = public, extensions, vault as $$

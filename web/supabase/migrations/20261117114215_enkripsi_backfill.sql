@@ -1,15 +1,5 @@
 -- Data migration: kunci acak dibuat sekali per database, lalu baris lama dienkripsi.
 -- Data baru sudah dienkripsi oleh trigger pada migrasi sebelumnya.
-do $$
-begin
-    if not exists (select 1 from vault.decrypted_secrets where name = 'nifas_encryption_key') then
-        perform vault.create_secret(
-            encode(extensions.gen_random_bytes(32), 'hex'),
-            'nifas_encryption_key',
-            'Kunci AES-256 untuk kolom sensitif SIM-NIFAS'
-        );
-    end if;
-end $$;
 
 do $$
 begin
